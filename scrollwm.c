@@ -50,6 +50,10 @@ void buttonpress(XEvent *e) {
 	if(!e->xbutton.subwindow) w = root;
 	else w = e->xbutton.subwindow;
 	if (w==root && e->xbutton.state == Mod4Mask) return;
+	if (w != root) {
+		XSetInputFocus(dpy,w,RevertToPointerRoot,CurrentTime);
+		XRaiseWindow(dpy,w);
+	}
 	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
 	XGetWindowAttributes(dpy,w, &attr);
 	start = e->xbutton;
