@@ -45,17 +45,14 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 };
 
 void buttonpress(XEvent *e) {
-	if (e->xbutton.button == 4) scrollwindows(clients,0,40);
-	else if (e->xbutton.button == 5) scrollwindows(clients,0,-40);
-	else if (e->xbutton.button == 6) scrollwindows(clients,40,0);
-	else if (e->xbutton.button == 7) scrollwindows(clients,-40,0);
-	if(!e->xbutton.subwindow) return;
-	else {
-		XGrabPointer(dpy,e->xbutton.subwindow,True,PointerMotionMask | ButtonReleaseMask,
-			GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
-		XGetWindowAttributes(dpy, e->xbutton.subwindow, &attr);
-		start = e->xbutton;
-	}
+	if (e->xbutton.button > 3) return;
+	Window w;
+	if(!e->xbutton.subwindow) w = root;
+	else w = e->xbutton.subwindow;
+	if (w==root && e->xbutton.state == Mod4Mask) return;
+	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
+	XGetWindowAttributes(dpy,w, &attr);
+	start = e->xbutton;
 }
 
 void buttonrelease(XEvent *e) {
@@ -91,10 +88,14 @@ void motionnotify(XEvent *e) {
 	Client *c = wintoclient(e->xbutton.window);
 	xdiff = e->xbutton.x_root - start.x_root;
 	ydiff = e->xbutton.y_root - start.y_root;
-	if (start.button == 1)
+	if (start.button == 1 && start.state == Mod4Mask)
 		XMoveWindow(dpy,c->win,(c->x=attr.x+xdiff),(c->y=attr.y+ydiff));
-	else if (start.button == 3)
+	else if (start.button == 3 && start.state == Mod4Mask)
 		XResizeWindow(dpy,c->win,attr.width+xdiff,attr.height+ydiff);
+	else if (start.button == 1 && start.state == Mod1Mask | Mod4Mask) {
+		scrollwindows(clients,xdiff,ydiff);
+		start.x_root+=xdiff; start.y_root+=ydiff;
+	}
 }
 
 void unmapnotify(XEvent *e) {
@@ -138,6 +139,7 @@ int main() {
     XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), Mod1Mask, root,
             True, GrabModeAsync, GrabModeAsync);
     XGrabButton(dpy, AnyButton, Mod4Mask, root, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+    XGrabButton(dpy, AnyButton, Mod1Mask|Mod4Mask, root, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
     XEvent ev;
 	while (running && !XNextEvent(dpy,&ev))
 		if (handler[ev.type])
