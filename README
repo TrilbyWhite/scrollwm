@@ -1,0 +1,12 @@
+ScrollWM
+
+This is currently at the concept stage only.  Do not expect this to do anything remotely useful as a WM yet.
+
+Mod4+mouse button 1 or 3 to move or resize a window.
+
+Mod4+mouse scroll (up/down/left/right) to move the desktop.
+
+Alt+F1 to launch urxvtc.
+
+That's it.
+
