@@ -35,6 +35,7 @@ static void unmapnotify(XEvent *);
 
 static void scrollwindows(Client *,int,int);
 static Client *wintoclient(Window);
+static void zoom(Client *,float);
 
 static Display * dpy;
 static Window root;
@@ -52,7 +53,9 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 };
 
 void buttonpress(XEvent *e) {
-	if (e->xbutton.button > 3) return;
+	if (e->xbutton.button == 4) zoom(clients,1.1);
+	else if (e->xbutton.button == 5) zoom(clients,0.89);
+	else if (e->xbutton.button > 3) return;
 	Window w;
 	if(!e->xbutton.subwindow) w = root;
 	else w = e->xbutton.subwindow;
@@ -138,6 +141,17 @@ Client *wintoclient(Window w) {
 	if (c) return c;
 	else return NULL;
 }
+
+void zoom(Client *stack, float factor) {
+	while (stack) {
+		XGetWindowAttributes(dpy,stack->win, &attr);
+		XMoveResizeWindow(dpy,stack->win,
+			(stack->x=attr.x*factor),(stack->y=attr.y*factor),
+			attr.width*factor,attr.height*factor);
+		stack = stack->next;
+	}
+}
+	
 
 int main() {
     if(!(dpy = XOpenDisplay(0x0))) return 1;
