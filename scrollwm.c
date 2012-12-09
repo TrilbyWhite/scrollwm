@@ -1,6 +1,13 @@
-/* scrollwm by Jesse McClure, copyright 2012 */
-/* Based on code from TinyWM:	*/
-/* TinyWM is written by Nick Welch <mack@incise.org>, 2005. */
+/*******************************************************************\
+* SCROLLWM - a floating WM with a single large scrollable workspace
+*
+* Author: Jesse McClure, copyright 2012
+* License: GPLv3
+*
+* Based on code from TinyWM and TTWM
+* TinyWM is written by Nick Welch <mack@incise.org>, 2005.
+* TTWM is written by Jesse McClure, 2011-2012
+\*******************************************************************/
 
 #include <stdlib.h>
 #include <stdio.h>
