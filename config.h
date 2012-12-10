@@ -9,8 +9,8 @@ static const char colors[LASTColor][9] = {
 	[Background]	= "#101010",
 	[Normal]		= "#686868",
 	[Hidden]		= "#AA68AA",
-	[Inactive]		= "#6868AA",
-	[Active]		= "#68AADD",
+	[Inactive]		= "#244080",
+	[Active]		= "#68B0E0",
 };
 
 #define ZOOM_MIN	0.2
@@ -30,6 +30,11 @@ static Key keys[] = {
 	{ MODKEY,			XK_Return,	spawn,		CMD(TERM)		},
 	{ MODKEY,			XK_p,		spawn,		CMD(DMENU)		},
 	{ MODKEY,			XK_w,		spawn,		CMD("luakit")	},
+	{ MODKEY|Mod1Mask,	XK_1,		tag,		"1"		},
+	{ MODKEY|Mod1Mask,	XK_2,		tag,		"2"		},
+	{ MODKEY|Mod1Mask,	XK_3,		tag,		"3"		},
+	{ MODKEY|Mod1Mask,	XK_4,		tag,		"4"		},
+	{ MODKEY|Mod1Mask,	XK_5,		tag,		"5"		},
 };
 
 // vim: ts=4

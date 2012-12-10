@@ -39,6 +39,7 @@ struct Client {
 	int tlen;
 	int x, y;
 	float w, h;
+	int tags;
 	Client *next;
 	Window win;
 };
@@ -50,8 +51,10 @@ static void maprequest(XEvent *);
 static void motionnotify(XEvent *);
 static void unmapnotify(XEvent *);
 
+static void draw(Client *);
 static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
+static void tag(const char *);
 static Client *wintoclient(Window);
 static void zoom(Client *,float,int,int);
 
@@ -66,7 +69,9 @@ static int fontheight;
 static XWindowAttributes attr;
 static XButtonEvent start;
 static Client *clients=NULL;
+static Client *focused;
 static Bool running = True;
+static int tags_vis=1, tags_act=1;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]	= buttonpress,
 	[ButtonRelease]	= buttonrelease,
@@ -88,8 +93,9 @@ void buttonpress(XEvent *e) {
 	else w = root;
 	if (w==root && e->xbutton.state == Mod4Mask) return;
 	if (c && e->xbutton.button == 2)
-		XMoveResizeWindow(dpy,c->win,(c->x=0),(c->y=0),(c->w=sw),(c->h=sh));
+		XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=-2),(c->w=sw),(c->h=sh));
 	if (c) {
+		focused = c;
 		XSetInputFocus(dpy,w,RevertToPointerRoot,CurrentTime);
 		XRaiseWindow(dpy,w);
 	}
@@ -101,6 +107,20 @@ void buttonpress(XEvent *e) {
 
 void buttonrelease(XEvent *e) {
 	XUngrabPointer(dpy, CurrentTime);
+}
+
+void draw(Client *stack) {
+	XColor color;
+	XSetWindowAttributes wa;
+	while (stack) {
+		//if (!(stack->tags & tags_vis)) XMoveWindow(...)
+		XAllocNamedColor(dpy,cmap,
+			colors[(stack->tags & tags_act ? Active : Inactive)],&color,&color);
+		wa.border_pixel = color.pixel;
+		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
+		stack = stack->next;
+	}
+	XFlush(dpy);
 }
 
 void keypress(XEvent *e) {
@@ -125,12 +145,16 @@ void maprequest(XEvent *e) {
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
 		c->w = attr.width; c->h = attr.height;
+		c->tags |= 1;
 		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
 		XSelectInput(dpy,c->win,PropertyChangeMask);
 		c->next = clients;
 		clients = c;
+		XSetWindowBorderWidth(dpy,c->win,2);
 		XMapWindow(dpy,c->win);
+		focused = c;
 	}
+	draw(clients);
 }
 
 void motionnotify(XEvent *e) {
@@ -166,14 +190,23 @@ void unmapnotify(XEvent *e) {
 
 void scrollwindows(Client *stack, int x, int y) {
 	while (stack) {
-		XGetWindowAttributes(dpy,stack->win, &attr);
-		XMoveWindow(dpy,stack->win,(stack->x=attr.x+x),(stack->y=attr.y+y));
+		if (stack->tags & tags_act) {
+			XGetWindowAttributes(dpy,stack->win, &attr);
+			XMoveWindow(dpy,stack->win,(stack->x=attr.x+x),(stack->y=attr.y+y));
+		}
 		stack = stack->next;
 	}
 }
 
 void spawn(const char *arg) {
 	system(arg);
+}
+
+void tag(const char *arg) {
+	if (!focused) return;
+	int t = arg[0] - 49;
+	focused->tags = (1<<t); //TODO improve this
+	draw(clients);
 }
 
 Client *wintoclient(Window w) {
