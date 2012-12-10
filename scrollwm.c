@@ -13,8 +13,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
+#include <X11/XKBlib.h>
+#include <X11/cursorfont.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+enum {Background, Normal, Hidden, Inactive, Active, LASTColor };
+
+typedef struct {
+	unsigned int mod;
+	KeySym keysym;
+	void (*func)(const char *);
+	const char *arg;
+} Key;
+
+typedef struct {
+	unsigned int mask, button;
+	void (*func)();
+} Button;
 
 typedef struct Client Client;
 struct Client {
@@ -34,12 +51,18 @@ static void motionnotify(XEvent *);
 static void unmapnotify(XEvent *);
 
 static void scrollwindows(Client *,int,int);
+static void spawn(const char *);
 static Client *wintoclient(Window);
 static void zoom(Client *,float,int,int);
+
+#include "config.h"
 
 static Display * dpy;
 static Window root;
 static int scr, sw, sh;
+static Colormap cmap;
+static XFontStruct *fontstruct;
+static int fontheight;
 static XWindowAttributes attr;
 static XButtonEvent start;
 static Client *clients=NULL;
@@ -54,20 +77,24 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 };
 
 void buttonpress(XEvent *e) {
-	if (e->xbutton.button == 4) zoom(clients,1.1,e->xbutton.x_root,e->xbutton.y_root);
-	else if (e->xbutton.button == 5) zoom(clients,.89,e->xbutton.x_root,e->xbutton.y_root);
+	if (e->xbutton.button == 4)
+		zoom(clients,1.1,e->xbutton.x_root,e->xbutton.y_root);
+	else if (e->xbutton.button == 5)
+		zoom(clients,.89,e->xbutton.x_root,e->xbutton.y_root);
 	else if (e->xbutton.button > 3) return;
 	Client *c;
 	Window w;
 	if( (c=wintoclient(e->xbutton.subwindow))) w = c->win;
 	else w = root;
 	if (w==root && e->xbutton.state == Mod4Mask) return;
-	if (c && e->xbutton.button == 2) XMoveResizeWindow(dpy,c->win,(c->x=0),(c->y=0),(c->w=sw),(c->h=sh));
+	if (c && e->xbutton.button == 2)
+		XMoveResizeWindow(dpy,c->win,(c->x=0),(c->y=0),(c->w=sw),(c->h=sh));
 	if (c) {
 		XSetInputFocus(dpy,w,RevertToPointerRoot,CurrentTime);
 		XRaiseWindow(dpy,w);
 	}
-	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
+	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,
+		GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
 	XGetWindowAttributes(dpy,w, &attr);
 	start = e->xbutton;
 }
@@ -77,7 +104,13 @@ void buttonrelease(XEvent *e) {
 }
 
 void keypress(XEvent *e) {
-	system("urxvt &");
+	unsigned int i;
+	XKeyEvent *ev = &e->xkey;
+	KeySym keysym = XkbKeycodeToKeysym(dpy,(KeyCode)ev->keycode,0,0);
+	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
+		if ( (keysym==keys[i].keysym) && keys[i].func &&
+				keys[i].mod == ((ev->state&~Mod2Mask)&~LockMask) )
+			keys[i].func(keys[i].arg);
 }
 
 void maprequest(XEvent *e) {
@@ -139,6 +172,10 @@ void scrollwindows(Client *stack, int x, int y) {
 	}
 }
 
+void spawn(const char *arg) {
+	system(arg);
+}
+
 Client *wintoclient(Window w) {
 	Client *c;
 	for (c = clients; c && c->win != w; c = c->next);
@@ -149,11 +186,12 @@ Client *wintoclient(Window w) {
 void zoom(Client *stack, float factor, int x, int y) {
 	while (stack) {
 		stack->w *= factor; stack->h *= factor;
-		if (stack->w < 0.1) stack->w = 0.1;
-		if (stack->h < 0.1) stack->h = 0.1;
+		if (stack->w < ZOOM_MIN) stack->w = ZOOM_MIN;
+		if (stack->h < ZOOM_MIN) stack->h = ZOOM_MIN;
 		stack->x = (stack->x-x) * factor + x;
 		stack->y = (stack->y-y) * factor + y;
-		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,MAX(stack->w,20),MAX(stack->h,20));
+		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,
+			MAX(stack->w,WIN_MIN),MAX(stack->h,WIN_MIN));
 		stack = stack->next;
 	}
 }
@@ -165,19 +203,39 @@ int main() {
 	sw = DisplayWidth(dpy,scr);
 	sh = DisplayHeight(dpy,scr);
     root = DefaultRootWindow(dpy);
+	XDefineCursor(dpy,root,XCreateFontCursor(dpy,SCROLLWM_CURSOR));
+
+	cmap = DefaultColormap(dpy,scr);
+	XGCValues val;
+	val.font = XLoadFont(dpy,font);
+	fontstruct = XQueryFont(dpy,val.font);
+	fontheight = fontstruct->ascent+1;
+	// TODO create status bar here
+
 	XSetWindowAttributes wa;
 	wa.event_mask = ExposureMask | FocusChangeMask | SubstructureNotifyMask |
-					ButtonReleaseMask | PropertyChangeMask | SubstructureRedirectMask | StructureNotifyMask;
+					ButtonReleaseMask | PropertyChangeMask | SubstructureRedirectMask |
+					StructureNotifyMask;
 	XChangeWindowAttributes(dpy,root,CWEventMask,&wa);
 	XSelectInput(dpy,root,wa.event_mask);
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), Mod1Mask, root,
-            True, GrabModeAsync, GrabModeAsync);
-    XGrabButton(dpy, AnyButton, Mod4Mask, root, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
-    XGrabButton(dpy, AnyButton, Mod1Mask|Mod4Mask, root, True, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
+
+	unsigned int mods[] = {0, LockMask, Mod2Mask, LockMask|Mod2Mask};
+	KeyCode code;
+	XUngrabKey(dpy,AnyKey,AnyModifier,root);
+	int i,j;
+	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
+		if ( (code=XKeysymToKeycode(dpy,keys[i].keysym)) ) for (j = 0; j < 4; j++)
+			XGrabKey(dpy,code,keys[i].mod|mods[j],root,True,GrabModeAsync,GrabModeAsync);
+    XGrabButton(dpy,AnyButton,Mod4Mask,root,True,ButtonPressMask,GrabModeAsync,
+		GrabModeAsync,None,None);
+    XGrabButton(dpy,AnyButton,Mod4Mask|Mod1Mask,root,True,ButtonPressMask,GrabModeAsync,
+		GrabModeAsync,None,None);
     XEvent ev;
 	while (running && !XNextEvent(dpy,&ev))
 		if (handler[ev.type])
 			handler[ev.type](&ev);
+	XFreeFontInfo(NULL,fontstruct,1);
+	XUnloadFont(dpy,val.font);
 	return 0;
 }
 
