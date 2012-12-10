@@ -11,17 +11,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <X11/Xlib.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 typedef struct Client Client;
 struct Client {
-/*
 	char *title;
 	int tlen;
-*/
 	int x, y;
+	float w, h;
 	Client *next;
 	Window win;
 };
@@ -35,10 +35,11 @@ static void unmapnotify(XEvent *);
 
 static void scrollwindows(Client *,int,int);
 static Client *wintoclient(Window);
-static void zoom(Client *,float);
+static void zoom(Client *,float,int,int);
 
 static Display * dpy;
 static Window root;
+static int scr, sw, sh;
 static XWindowAttributes attr;
 static XButtonEvent start;
 static Client *clients=NULL;
@@ -53,14 +54,16 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 };
 
 void buttonpress(XEvent *e) {
-	if (e->xbutton.button == 4) zoom(clients,1.1);
-	else if (e->xbutton.button == 5) zoom(clients,0.89);
+	if (e->xbutton.button == 4) zoom(clients,1.1,e->xbutton.x_root,e->xbutton.y_root);
+	else if (e->xbutton.button == 5) zoom(clients,.89,e->xbutton.x_root,e->xbutton.y_root);
 	else if (e->xbutton.button > 3) return;
+	Client *c;
 	Window w;
-	if(!e->xbutton.subwindow) w = root;
-	else w = e->xbutton.subwindow;
+	if( (c=wintoclient(e->xbutton.subwindow))) w = c->win;
+	else w = root;
 	if (w==root && e->xbutton.state == Mod4Mask) return;
-	if (w != root) {
+	if (c && e->xbutton.button == 2) XMoveResizeWindow(dpy,c->win,(c->x=0),(c->y=0),(c->w=sw),(c->h=sh));
+	if (c) {
 		XSetInputFocus(dpy,w,RevertToPointerRoot,CurrentTime);
 		XRaiseWindow(dpy,w);
 	}
@@ -88,8 +91,9 @@ void maprequest(XEvent *e) {
 		c->win = ev->window;
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
-	//	if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
-	//	XSelectInput(dpy,c->win,PropertyChangeMask);
+		c->w = attr.width; c->h = attr.height;
+		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
+		XSelectInput(dpy,c->win,PropertyChangeMask);
 		c->next = clients;
 		clients = c;
 		XMapWindow(dpy,c->win);
@@ -105,7 +109,7 @@ void motionnotify(XEvent *e) {
 	if (start.button == 1 && start.state == Mod4Mask)
 		XMoveWindow(dpy,c->win,(c->x=attr.x+xdiff),(c->y=attr.y+ydiff));
 	else if (start.button == 3 && start.state == Mod4Mask)
-		XResizeWindow(dpy,c->win,attr.width+xdiff,attr.height+ydiff);
+		XResizeWindow(dpy,c->win,(c->w=attr.width+xdiff),(c->h=attr.height+ydiff));
 	else if (start.button == 1 && start.state == Mod1Mask | Mod4Mask) {
 		scrollwindows(clients,xdiff,ydiff);
 		start.x_root+=xdiff; start.y_root+=ydiff;
@@ -142,12 +146,14 @@ Client *wintoclient(Window w) {
 	else return NULL;
 }
 
-void zoom(Client *stack, float factor) {
+void zoom(Client *stack, float factor, int x, int y) {
 	while (stack) {
-		XGetWindowAttributes(dpy,stack->win, &attr);
-		XMoveResizeWindow(dpy,stack->win,
-			(stack->x=attr.x*factor),(stack->y=attr.y*factor),
-			attr.width*factor,attr.height*factor);
+		stack->w *= factor; stack->h *= factor;
+		if (stack->w < 0.1) stack->w = 0.1;
+		if (stack->h < 0.1) stack->h = 0.1;
+		stack->x = (stack->x-x) * factor + x;
+		stack->y = (stack->y-y) * factor + y;
+		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,MAX(stack->w,20),MAX(stack->h,20));
 		stack = stack->next;
 	}
 }
@@ -155,6 +161,9 @@ void zoom(Client *stack, float factor) {
 
 int main() {
     if(!(dpy = XOpenDisplay(0x0))) return 1;
+	scr = DefaultScreen(dpy);
+	sw = DisplayWidth(dpy,scr);
+	sh = DisplayHeight(dpy,scr);
     root = DefaultRootWindow(dpy);
 	XSetWindowAttributes wa;
 	wa.event_mask = ExposureMask | FocusChangeMask | SubstructureNotifyMask |
@@ -171,4 +180,5 @@ int main() {
 			handler[ev.type](&ev);
 	return 0;
 }
+
 
