@@ -141,10 +141,10 @@ void cycle(const char *arg) {
 		}
 	}
 	else if (arg[0] == 's') {
-		while ( focused && (focused->tags & tags_hide) && !onscreen(focused=focused->next));
+		while ( focused && (focused=focused->next) && (focused->tags & tags_hide) && !onscreen(focused));
 		if (!focused) {
 			if ( !onscreen(focused=clients) )
-				while ( focused && (focused->tags & tags_hide) && !onscreen(focused=focused->next));
+				while ( focused && (focused=focused->next) && (focused->tags & tags_hide) && !onscreen(focused));
 			if (!focused) focused = prev;
 		}
 	}
