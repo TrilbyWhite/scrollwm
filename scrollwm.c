@@ -167,6 +167,8 @@ void desktop(const char *arg) {
 }
 
 void draw(Client *stack) {
+	if (focused) tags_urg &= ~(1<<focused->tags);
+	tags_urg &= ~(1<<curtag);
 	/* WINDOWS */
 	XColor color;
 	int tags_occ = 0;
@@ -262,7 +264,6 @@ void expose(XEvent *e) {
 void focusclient(Client *c) {
 	focused = c;
 	if (!c) return;
-	tags_urg &= ~(1<<c->tags);
 	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
 	XRaiseWindow(dpy,c->win);
 	XRaiseWindow(dpy,bar);
