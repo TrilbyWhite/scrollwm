@@ -262,6 +262,7 @@ void expose(XEvent *e) {
 void focusclient(Client *c) {
 	focused = c;
 	if (!c) return;
+	tags_urg &= ~(1<<c->tags);
 	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
 	XRaiseWindow(dpy,c->win);
 	XRaiseWindow(dpy,bar);
