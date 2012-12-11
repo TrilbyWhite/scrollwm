@@ -12,5 +12,25 @@ Mod4+Enter launch urxvt
 Mod4+w launch luakit
 Mod4+p launch dmenu
 
+Mod4+N to select a tag
+Mod4+Alt+N to toggle a tag for the currently focused window
+Mod4+h to hide the current tag
+Mod4+s to "sticky" the current tag
+Mod4+n to remove hide and sticky bits from the current tag.
+
+STATUS BAR:
+Tags:
+Current tag is underlined
+Occupied tags are in light blue
+Hidden tags are orange
+Sticky tags are green
+
+Title:
+Current window title is displayed followed by the tags it is on
+
+BEHAVIOR:
+Sticky windows/tags do not scroll or zoom
+Hidden windws/tags are not seen
+
 That's it.
 

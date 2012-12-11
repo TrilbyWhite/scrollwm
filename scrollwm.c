@@ -19,7 +19,7 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-enum {Background, Normal, Hidden, Inactive, Active, LASTColor };
+enum {Background, Default, Hidden, Normal, Sticky, Urgent, LASTColor };
 
 typedef struct {
 	unsigned int mod;
@@ -46,35 +46,44 @@ struct Client {
 
 static void buttonpress(XEvent *);
 static void buttonrelease(XEvent *);
+static void expose(XEvent *);
 static void keypress(XEvent *);
 static void maprequest(XEvent *);
 static void motionnotify(XEvent *);
 static void unmapnotify(XEvent *);
 
 static void draw(Client *);
+static void focusclient(Client *);
+static void quit(const char *);
 static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
 static void tag(const char *);
+static void tagconfig(const char *);
+static void toggletag(const char *);
 static Client *wintoclient(Window);
 static void zoom(Client *,float,int,int);
 
 #include "config.h"
 
 static Display * dpy;
-static Window root;
+static Window root, bar;
+static Pixmap buf;
 static int scr, sw, sh;
+static GC gc;
 static Colormap cmap;
 static XFontStruct *fontstruct;
-static int fontheight;
+static int fontheight, barheight;
 static XWindowAttributes attr;
 static XButtonEvent start;
 static Client *clients=NULL;
 static Client *focused;
-static Bool running = True;
-static int tags_vis=1, tags_act=1;
+static Bool running = True, showbar = True;
+static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
+static int curtag = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]	= buttonpress,
 	[ButtonRelease]	= buttonrelease,
+	[Expose]		= expose,
 	[KeyPress]		= keypress,
 	[MapRequest]	= maprequest,
 	[MotionNotify]	= motionnotify,
@@ -85,24 +94,23 @@ void buttonpress(XEvent *e) {
 	if (e->xbutton.button == 4)
 		zoom(clients,1.1,e->xbutton.x_root,e->xbutton.y_root);
 	else if (e->xbutton.button == 5)
-		zoom(clients,.89,e->xbutton.x_root,e->xbutton.y_root);
+		zoom(clients,.92,e->xbutton.x_root,e->xbutton.y_root);
 	else if (e->xbutton.button > 3) return;
 	Client *c;
 	Window w;
 	if( (c=wintoclient(e->xbutton.subwindow))) w = c->win;
 	else w = root;
 	if (w==root && e->xbutton.state == Mod4Mask) return;
-	if (c && e->xbutton.button == 2)
-		XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=-2),(c->w=sw),(c->h=sh));
-	if (c) {
-		focused = c;
-		XSetInputFocus(dpy,w,RevertToPointerRoot,CurrentTime);
-		XRaiseWindow(dpy,w);
+	if (c && e->xbutton.button == 2) {
+		if (showbar) XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=barheight-2),(c->w=sw),(c->h=sh-barheight));
+		else XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=-2),(c->w=sw),(c->h=sh));
 	}
+	if (c) focusclient(c);
 	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,
 		GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
 	XGetWindowAttributes(dpy,w, &attr);
 	start = e->xbutton;
+	draw(clients);
 }
 
 void buttonrelease(XEvent *e) {
@@ -110,17 +118,72 @@ void buttonrelease(XEvent *e) {
 }
 
 void draw(Client *stack) {
+	/* windows */
 	XColor color;
+	int tags_occ = 0;
 	XSetWindowAttributes wa;
 	while (stack) {
-		//if (!(stack->tags & tags_vis)) XMoveWindow(...)
+		tags_occ |= stack->tags;
+		if (stack->tags & tags_hide) {
+			XMoveWindow(dpy,stack->win,sw+2,0);
+			stack = stack->next;
+			continue;
+		}
+		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,
+			MAX(stack->w,WIN_MIN),MAX(stack->h,WIN_MIN));
 		XAllocNamedColor(dpy,cmap,
-			colors[(stack->tags & tags_act ? Active : Inactive)],&color,&color);
+			colors[(stack->tags & tags_stik ? Sticky : Normal)],&color,&color);
 		wa.border_pixel = color.pixel;
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
 	}
+	/* status bar */
+	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	XFillRectangle(dpy,buf,gc,0,0,sw,barheight);
+	int i, x=10,w;
+	int col;
+	for (i = 0; tag_name[i]; i++) {
+		if (!(tags_occ & (1<<i)) && curtag != i) continue;
+		col = (tags_urg & (1<<i) ? Urgent :
+				(tags_hide & (1<<i) ? Hidden :
+				(tags_stik & (1<<i) ? Sticky : 
+				(tags_occ  & (1<<i) ? Normal : Default ))));
+		XAllocNamedColor(dpy,cmap,colors[col],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
+		XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
+		w = XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
+		if (curtag == i) XFillRectangle(dpy,buf,gc,x-5,fontheight+1,w+10,barheight-fontheight);
+		x+=w+10;
+	}
+	if (focused) {
+		XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
+		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
+		x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
+		XDrawString(dpy,buf,gc,x,fontheight,"[",1);
+		x += XTextWidth(fontstruct,"[",1);
+		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
+			XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
+			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i])) + 4;
+		}
+		XDrawString(dpy,buf,gc,x,fontheight,"]",1);
+	}
+	XCopyArea(dpy,buf,bar,gc,0,0,sw,barheight,0,0);
+	XRaiseWindow(dpy,bar);
 	XFlush(dpy);
+}
+
+void expose(XEvent *e) {
+	draw(clients);
+}
+
+void focusclient(Client *c) {
+	focused = c;
+	if (!c) return;
+	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
+	XRaiseWindow(dpy,c->win);
+	XRaiseWindow(dpy,bar);
 }
 
 void keypress(XEvent *e) {
@@ -145,14 +208,15 @@ void maprequest(XEvent *e) {
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
 		c->w = attr.width; c->h = attr.height;
-		c->tags |= 1;
+		if (c->y < barheight+2 && showbar) c->y = barheight+2;
+		c->tags = (1<<curtag);
 		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
 		XSelectInput(dpy,c->win,PropertyChangeMask);
 		c->next = clients;
 		clients = c;
 		XSetWindowBorderWidth(dpy,c->win,2);
 		XMapWindow(dpy,c->win);
-		focused = c;
+		focusclient(c);
 	}
 	draw(clients);
 }
@@ -173,27 +237,14 @@ void motionnotify(XEvent *e) {
 	}
 }
 
-void unmapnotify(XEvent *e) {
-	Client *c,*t;
-	XUnmapEvent *ev = &e->xunmap;
-	if (!(c=wintoclient(ev->window))) return;
-	if (!ev->send_event) {
-		if (c == clients) clients = c->next;
-		else {
-			for (t = clients; t && t->next != c; t = t->next);
-			t->next = c->next;
-		}
-		//XFree(c->title);
-		free(c);
-	}
+void quit(const char *arg) {
+	running = False;
 }
 
 void scrollwindows(Client *stack, int x, int y) {
 	while (stack) {
-		if (stack->tags & tags_act) {
-			XGetWindowAttributes(dpy,stack->win, &attr);
-			XMoveWindow(dpy,stack->win,(stack->x=attr.x+x),(stack->y=attr.y+y));
-		}
+		if ( !(stack->tags & tags_hide) && !(stack->tags & tags_stik) )
+			XMoveWindow(dpy,stack->win,(stack->x+=x),(stack->y+=y));
 		stack = stack->next;
 	}
 }
@@ -203,9 +254,41 @@ void spawn(const char *arg) {
 }
 
 void tag(const char *arg) {
+	curtag = arg[0] - 49;
+	draw(clients);
+}
+
+void tagconfig(const char *arg) {
+	if (arg[0] == 'h') tags_hide |= (1<<curtag);
+	else if (arg[0] == 's') tags_stik |= (1<<curtag);
+	else if (arg[0] == 'n') { tags_stik &= ~(1<<curtag); tags_hide &= ~(1<<curtag); }
+	else if (arg[0] == 'b') showbar = ~showbar;
+	draw(clients);
+}
+
+void toggletag(const char *arg) {
 	if (!focused) return;
 	int t = arg[0] - 49;
-	focused->tags = (1<<t); //TODO improve this
+	focused->tags = focused->tags ^ (1<<t);
+	draw(clients);
+}
+
+void unmapnotify(XEvent *e) {
+	Client *c,*t;
+	XUnmapEvent *ev = &e->xunmap;
+	if (!(c=wintoclient(ev->window))) return;
+	if (!ev->send_event) {
+		if (c == focused) focusclient(c->next);
+		if (c == clients) clients = c->next;
+		else {
+			for (t = clients; t && t->next != c; t = t->next);
+			t->next = c->next;
+		}
+		XFree(c->title);
+		free(c);
+		c = NULL;
+	}
+	if (!focused) focusclient(clients);
 	draw(clients);
 }
 
@@ -218,15 +301,16 @@ Client *wintoclient(Window w) {
 
 void zoom(Client *stack, float factor, int x, int y) {
 	while (stack) {
-		stack->w *= factor; stack->h *= factor;
-		if (stack->w < ZOOM_MIN) stack->w = ZOOM_MIN;
-		if (stack->h < ZOOM_MIN) stack->h = ZOOM_MIN;
-		stack->x = (stack->x-x) * factor + x;
-		stack->y = (stack->y-y) * factor + y;
-		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,
-			MAX(stack->w,WIN_MIN),MAX(stack->h,WIN_MIN));
+		if (!(stack->tags & tags_stik)) {
+			stack->w *= factor; stack->h *= factor;
+			if (stack->w < ZOOM_MIN) stack->w = ZOOM_MIN;
+			if (stack->h < ZOOM_MIN) stack->h = ZOOM_MIN;
+			stack->x = (stack->x-x) * factor + x;
+			stack->y = (stack->y-y) * factor + y;
+		}
 		stack = stack->next;
 	}
+	draw(clients);
 }
 	
 
@@ -243,15 +327,20 @@ int main() {
 	val.font = XLoadFont(dpy,font);
 	fontstruct = XQueryFont(dpy,val.font);
 	fontheight = fontstruct->ascent+1;
-	// TODO create status bar here
+	barheight = fontstruct->ascent+fontstruct->descent+2;
+	gc = XCreateGC(dpy,root,GCFont,&val);
 
+	bar = XCreateSimpleWindow(dpy,root,0,0,sw,barheight,0,0,0);
+	buf = XCreatePixmap(dpy,root,sw,barheight,DefaultDepth(dpy,scr));
 	XSetWindowAttributes wa;
-	wa.event_mask = ExposureMask | FocusChangeMask | SubstructureNotifyMask |
-					ButtonReleaseMask | PropertyChangeMask | SubstructureRedirectMask |
-					StructureNotifyMask;
+	wa.override_redirect = True;
+	wa.event_mask = ExposureMask;
+	XChangeWindowAttributes(dpy,bar,CWOverrideRedirect|CWEventMask,&wa);
+	XMapWindow(dpy,bar);
+	wa.event_mask = FocusChangeMask | SubstructureNotifyMask | ButtonReleaseMask |
+			PropertyChangeMask | SubstructureRedirectMask | StructureNotifyMask;
 	XChangeWindowAttributes(dpy,root,CWEventMask,&wa);
 	XSelectInput(dpy,root,wa.event_mask);
-
 	unsigned int mods[] = {0, LockMask, Mod2Mask, LockMask|Mod2Mask};
 	KeyCode code;
 	XUngrabKey(dpy,AnyKey,AnyModifier,root);
