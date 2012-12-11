@@ -153,7 +153,7 @@ void draw(Client *stack) {
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
 		w = XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
-		if (curtag == i) XFillRectangle(dpy,buf,gc,x-5,fontheight+1,w+10,barheight-fontheight);
+		if (curtag == i) XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
 		x+=w+10;
 	}
 	if (focused) {
