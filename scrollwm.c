@@ -379,13 +379,14 @@ void spawn(const char *arg) {
 
 void tag(const char *arg) {
 	curtag = arg[0] - 49;
-	if (!clients) return;
 	Client *c, *t=NULL;
-	for (c = clients; c; c = c->next) if (c->tags & (1<<curtag)) {
-		if (!t) t = c;
-		XRaiseWindow(dpy,c->win);
+	if (clients) {
+		for (c = clients; c; c = c->next) if (c->tags & (1<<curtag)) {
+			if (!t) t = c;
+			XRaiseWindow(dpy,c->win);
+		}
+		if (! (focused->tags & (1<<curtag)) && t ) focusclient(t);
 	}
-	if (! (focused->tags & (1<<curtag)) && t ) focusclient(t);
 	draw(clients);
 }
 
