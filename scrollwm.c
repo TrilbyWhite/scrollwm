@@ -108,7 +108,7 @@ void buttonpress(XEvent *e) {
 	if (c) focusclient(c);
 	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,
 		GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
-	XGetWindowAttributes(dpy,w, &attr);
+	//XGetWindowAttributes(dpy,w, &attr);
 	start = e->xbutton;
 	draw(clients);
 }
@@ -118,11 +118,15 @@ void buttonrelease(XEvent *e) {
 }
 
 void draw(Client *stack) {
-	/* windows */
+	/* WINDOWS */
 	XColor color;
 	int tags_occ = 0;
+	int loc[9] = {0,0,0,0,0,0,0,0,0}, cx,cy;
 	XSetWindowAttributes wa;
 	while (stack) {
+		cx = stack->x + stack->w/2;
+		cy = stack->y + stack->h/2;
+		loc[(cx<0?0:(cx<sw?1:2))*3 + (cy<0?0:(cy<sh?1:2))]++;
 		tags_occ |= stack->tags;
 		if (stack->tags & tags_hide) {
 			XMoveWindow(dpy,stack->win,sw+2,0);
@@ -137,10 +141,11 @@ void draw(Client *stack) {
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
 	}
-	/* status bar */
+	/* STATUS BAR */
 	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
 	XSetForeground(dpy,gc,color.pixel);
 	XFillRectangle(dpy,buf,gc,0,0,sw,barheight);
+	/* tags */
 	int i, x=10,w=0;
 	int col;
 	for (i = 0; tag_name[i]; i++) {
@@ -156,8 +161,21 @@ void draw(Client *stack) {
 		if (curtag == i) XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
 		x+=w+10;
 	}
+	/* overview "icon" */
+	x = MAX(x+20,sw/10);
+	XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	XDrawRectangle(dpy,buf,gc,x,fontheight-9,6,6);
+	XDrawRectangle(dpy,buf,gc,x,fontheight-6,6,6);
+	XDrawRectangle(dpy,buf,gc,x+3,fontheight-9,6,6);
+	XDrawRectangle(dpy,buf,gc,x+3,fontheight-6,6,6);
+	XAllocNamedColor(dpy,cmap,colors[Hidden],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	for (i = 0; i < 3; i++) for (w = 0; w < 3; w++) if (loc[i*3+w])
+	XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
+	x+=20;
+	/* title */
 	if (focused) {
-		x = MAX(x+20,sw/8);
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
@@ -166,6 +184,7 @@ void draw(Client *stack) {
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,"[",1);
 		x += XTextWidth(fontstruct,"[",1);
+		/* tag list */
 		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
 			XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
 			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
@@ -239,14 +258,16 @@ void motionnotify(XEvent *e) {
 	Client *c = wintoclient(e->xbutton.window);
 	xdiff = e->xbutton.x_root - start.x_root;
 	ydiff = e->xbutton.y_root - start.y_root;
-	if (start.button == 1 && start.state == Mod4Mask)
-		XMoveWindow(dpy,c->win,(c->x=attr.x+xdiff),(c->y=attr.y+ydiff));
-	else if (start.button == 3 && start.state == Mod4Mask)
-		XResizeWindow(dpy,c->win,(c->w=attr.width+xdiff),(c->h=attr.height+ydiff));
+	if (start.button == 1 && start.state == Mod4Mask) {
+		c->x+=xdiff; c->y+=ydiff; draw(clients);
+	}
+	else if (start.button == 3 && start.state == Mod4Mask) {
+		c->w+=xdiff; c->h+=ydiff; draw(clients);
+	}
 	else if (start.button == 1 && start.state == (Mod1Mask | Mod4Mask)) {
 		scrollwindows(clients,xdiff,ydiff);
-		start.x_root+=xdiff; start.y_root+=ydiff;
 	}
+	start.x_root+=xdiff; start.y_root+=ydiff;
 }
 
 void quit(const char *arg) {
@@ -255,10 +276,13 @@ void quit(const char *arg) {
 
 void scrollwindows(Client *stack, int x, int y) {
 	while (stack) {
-		if ( !(stack->tags & tags_hide) && !(stack->tags & tags_stik) )
-			XMoveWindow(dpy,stack->win,(stack->x+=x),(stack->y+=y));
+		if (!(stack->tags & tags_stik)) {
+			stack->x+=x;
+			stack->y+=y;
+		}
 		stack = stack->next;
 	}
+	draw(clients);
 }
 
 void spawn(const char *arg) {
@@ -364,6 +388,7 @@ int main() {
 		GrabModeAsync,None,None);
     XGrabButton(dpy,AnyButton,Mod4Mask|Mod1Mask,root,True,ButtonPressMask,GrabModeAsync,
 		GrabModeAsync,None,None);
+	draw(clients);
     XEvent ev;
 	while (running && !XNextEvent(dpy,&ev))
 		if (handler[ev.type])
