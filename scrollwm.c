@@ -231,7 +231,7 @@ void motionnotify(XEvent *e) {
 		XMoveWindow(dpy,c->win,(c->x=attr.x+xdiff),(c->y=attr.y+ydiff));
 	else if (start.button == 3 && start.state == Mod4Mask)
 		XResizeWindow(dpy,c->win,(c->w=attr.width+xdiff),(c->h=attr.height+ydiff));
-	else if (start.button == 1 && start.state == Mod1Mask | Mod4Mask) {
+	else if (start.button == 1 && start.state == (Mod1Mask | Mod4Mask)) {
 		scrollwindows(clients,xdiff,ydiff);
 		start.x_root+=xdiff; start.y_root+=ydiff;
 	}
