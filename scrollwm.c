@@ -167,7 +167,7 @@ void desktop(const char *arg) {
 }
 
 void draw(Client *stack) {
-	if (focused) tags_urg &= ~(1<<focused->tags);
+	if (focused) tags_urg &= ~focused->tags;
 	tags_urg &= ~(1<<curtag);
 	/* WINDOWS */
 	XColor color;
