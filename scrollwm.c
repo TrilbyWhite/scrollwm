@@ -15,6 +15,8 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -346,19 +348,14 @@ void propertynotify(XEvent *e) {
         c->title = NULL;
         c->tlen = 0;
         if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
-        drawbar();
+        draw(clients);
     }
     else if (ev->atom == XA_WM_HINTS) {
         XWMHints *hint;
         if ( (hint=XGetWMHints(dpy,c->win)) && (hint->flags & XUrgencyHint) )
 			tags_urg |= c->tags;
-        drawbar();
+        draw(clients);
     }
-}
-
-void buttonrelease(XEvent *e) {
-	XUngrabPointer(dpy, CurrentTime);
-	mousemode = MOff;
 }
 
 void quit(const char *arg) {
