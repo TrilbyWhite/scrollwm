@@ -141,10 +141,10 @@ void cycle(const char *arg) {
 		}
 	}
 	else if (arg[0] == 's') {
-		while ( focused && !onscreen(focused=focused->next) );
+		while ( focused && !onscreen(focused=focused->next) && (focused->tags & tags_hide));
 		if (!focused) {
 			if ( !onscreen(focused=clients) )
-				while ( focused && !onscreen(focused=focused->next) );
+				while ( focused && !onscreen(focused=focused->next) && (focused->tags & tags_hide));
 			if (!focused) focused = prev;
 		}
 	}
@@ -157,6 +157,7 @@ void cycle(const char *arg) {
 		}
 	}	
 	focusclient(focused);
+	draw(clients);
 }
 
 void desktop(const char *arg) {
