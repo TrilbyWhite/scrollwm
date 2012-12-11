@@ -13,6 +13,8 @@ static const char colors[LASTColor][9] = {
 	[Normal]		= "#68B0E0",
 	[Sticky]		= "#288428",
 	[Urgent]		= "#FF8880",
+	[Title]			= "#DDDDDD",
+	[TagList]		= "#242424",
 };
 
 #define ZOOM_MIN	0.2

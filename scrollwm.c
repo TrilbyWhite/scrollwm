@@ -19,7 +19,7 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-enum {Background, Default, Hidden, Normal, Sticky, Urgent, LASTColor };
+enum {Background, Default, Hidden, Normal, Sticky, Urgent, Title, TagList, LASTColor };
 
 typedef struct {
 	unsigned int mod;
@@ -157,15 +157,22 @@ void draw(Client *stack) {
 		x+=w+10;
 	}
 	if (focused) {
-		XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
+		x = MAX(x+20,sw/4);
+		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
 		x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
+		XAllocNamedColor(dpy,cmap,colors[TagList],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,"[",1);
 		x += XTextWidth(fontstruct,"[",1);
 		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
 			XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
-			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i])) + 4;
+			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
+			if (tagname[i+1]) {
+				XDrawString(dpy,buf,gc,x,fontheight,", ",2);
+				x += XTextWidth(fontstruct,", ",2);
+			}
 		}
 		XDrawString(dpy,buf,gc,x,fontheight,"]",1);
 	}
