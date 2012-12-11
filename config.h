@@ -53,4 +53,19 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,	XK_5,		toggletag,	"5"		},
 };
 
+static Button buttons[] = {
+	/* modifier			button		function 	arg */
+	{MODKEY,			1,			window,		"move"		},
+	{MODKEY,			2,			window,		"zoom"		},
+	{MODKEY,			3,			window,		"resize"	},
+	{MODKEY,			4,			window,		"grow"		},
+	{MODKEY,			5,			window,		"shrink"	},
+	{MODKEY|Mod1Mask,	1,			desktop,	"move"		},
+	//{MODKEY|Mod1Mask,	2,			desktop,	"zoom"		},
+	//{MODKEY|Mod1Mask,	3,			desktop,	"resize"	},
+	{MODKEY|Mod1Mask,	4,			desktop,	"grow"		},
+	{MODKEY|Mod1Mask,	5,			desktop,	"shrink"	},
+};
+
+
 // vim: ts=4

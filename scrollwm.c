@@ -20,6 +20,7 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 enum {Background, Default, Hidden, Normal, Sticky, Urgent, Title, TagList, LASTColor };
+enum {MOff, MWMove, MWResize, MDMove, MDResize };
 
 typedef struct {
 	unsigned int mod;
@@ -29,8 +30,9 @@ typedef struct {
 } Key;
 
 typedef struct {
-	unsigned int mask, button;
-	void (*func)();
+	unsigned int mod, button;
+	void (*func)(const char *);
+	const char *arg;
 } Button;
 
 typedef struct Client Client;
@@ -52,6 +54,7 @@ static void maprequest(XEvent *);
 static void motionnotify(XEvent *);
 static void unmapnotify(XEvent *);
 
+static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
 static void quit(const char *);
@@ -60,7 +63,9 @@ static void spawn(const char *);
 static void tag(const char *);
 static void tagconfig(const char *);
 static void toggletag(const char *);
+static void window(const char *);
 static Client *wintoclient(Window);
+static void zoomwindow(Client *,float,int,int);
 static void zoom(Client *,float,int,int);
 
 #include "config.h"
@@ -75,6 +80,7 @@ static XFontStruct *fontstruct;
 static int fontheight, barheight;
 static XWindowAttributes attr;
 static XButtonEvent start;
+static int mousemode;
 static Client *clients=NULL;
 static Client *focused;
 static Bool running = True, showbar = True;
@@ -91,30 +97,43 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 };
 
 void buttonpress(XEvent *e) {
-	if (e->xbutton.button == 4)
-		zoom(clients,1.1,e->xbutton.x_root,e->xbutton.y_root);
-	else if (e->xbutton.button == 5)
-		zoom(clients,.92,e->xbutton.x_root,e->xbutton.y_root);
-	else if (e->xbutton.button > 3) return;
+	XButtonEvent *ev = &e->xbutton;
 	Client *c;
-	Window w;
-	if( (c=wintoclient(e->xbutton.subwindow))) w = c->win;
-	else w = root;
-	if (w==root && e->xbutton.state == Mod4Mask) return;
-	if (c && e->xbutton.button == 2) {
-		if (showbar) XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=barheight-2),(c->w=sw),(c->h=sh-barheight));
-		else XMoveResizeWindow(dpy,c->win,(c->x=-2),(c->y=-2),(c->w=sw),(c->h=sh));
-	}
+	if ((c=wintoclient(ev->subwindow))) focused = c;
+	int i;
+	start = *ev;
+	for (i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
+		if ( (ev->button == buttons[i].button) && buttons[i].func &&
+				buttons[i].mod == ((ev->state&~Mod2Mask)&~LockMask) )
+			buttons[i].func(buttons[i].arg);
 	if (c) focusclient(c);
-	XGrabPointer(dpy,w,True,PointerMotionMask | ButtonReleaseMask,
+	if (mousemode != MOff) XGrabPointer(dpy,root,True,PointerMotionMask | ButtonReleaseMask,
 		GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
-	//XGetWindowAttributes(dpy,w, &attr);
-	start = e->xbutton;
 	draw(clients);
+}
+
+void window(const char *arg) {
+	if (arg[0] == 'm') mousemode = MWMove;
+	else if (arg[0] == 'r') mousemode = MWResize;
+	else if (arg[0] == 'g') zoomwindow(focused,1.1,start.x_root,start.y_root);
+	else if (arg[0] == 's') zoomwindow(focused,.92,start.x_root,start.y_root);
+	else if (arg[0] == 'z') {
+		focused->x=-2; focused->w=sw;
+		focused->y=(showbar ? barheight-2 : -2);
+		focused->h=(showbar ? sh-barheight : sh+4);
+	}
+}
+
+void desktop(const char *arg) {
+	if (arg[0] == 'm') mousemode = MDMove;
+	else if (arg[0] == 'r') mousemode = MDResize;
+	else if (arg[0] == 'g') zoom(clients,1.1,start.x_root,start.y_root);
+	else if (arg[0] == 's') zoom(clients,.92,start.x_root,start.y_root);
 }
 
 void buttonrelease(XEvent *e) {
 	XUngrabPointer(dpy, CurrentTime);
+	mousemode = MOff;
 }
 
 void draw(Client *stack) {
@@ -255,16 +274,15 @@ void maprequest(XEvent *e) {
 void motionnotify(XEvent *e) {
 	int xdiff, ydiff;
 	while(XCheckTypedEvent(dpy,MotionNotify,e));
-	Client *c = wintoclient(e->xbutton.window);
 	xdiff = e->xbutton.x_root - start.x_root;
 	ydiff = e->xbutton.y_root - start.y_root;
-	if (start.button == 1 && start.state == Mod4Mask) {
-		c->x+=xdiff; c->y+=ydiff; draw(clients);
+	if (mousemode == MWMove) {
+		focused->x+=xdiff; focused->y+=ydiff; draw(clients);
 	}
-	else if (start.button == 3 && start.state == Mod4Mask) {
-		c->w+=xdiff; c->h+=ydiff; draw(clients);
+	else if (mousemode == MWResize) {
+		focused->w+=xdiff; focused->h+=ydiff; draw(clients);
 	}
-	else if (start.button == 1 && start.state == (Mod1Mask | Mod4Mask)) {
+	else if (mousemode == MDMove) {
 		scrollwindows(clients,xdiff,ydiff);
 	}
 	start.x_root+=xdiff; start.y_root+=ydiff;
@@ -335,15 +353,17 @@ Client *wintoclient(Window w) {
 	else return NULL;
 }
 
+void zoomwindow(Client *c, float factor, int x, int y) {
+	c->w *= factor; c->h *= factor;
+	if (c->w < ZOOM_MIN) c->w = ZOOM_MIN;
+	if (c->h < ZOOM_MIN) c->h = ZOOM_MIN;
+	c->x = (c->x-x) * factor + x;
+	c->y = (c->y-y) * factor + y;
+}
+
 void zoom(Client *stack, float factor, int x, int y) {
 	while (stack) {
-		if (!(stack->tags & tags_stik)) {
-			stack->w *= factor; stack->h *= factor;
-			if (stack->w < ZOOM_MIN) stack->w = ZOOM_MIN;
-			if (stack->h < ZOOM_MIN) stack->h = ZOOM_MIN;
-			stack->x = (stack->x-x) * factor + x;
-			stack->y = (stack->y-y) * factor + y;
-		}
+		if (!(stack->tags & tags_stik)) zoomwindow(stack,factor,x,y);
 		stack = stack->next;
 	}
 	draw(clients);
@@ -384,10 +404,9 @@ int main() {
 	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
 		if ( (code=XKeysymToKeycode(dpy,keys[i].keysym)) ) for (j = 0; j < 4; j++)
 			XGrabKey(dpy,code,keys[i].mod|mods[j],root,True,GrabModeAsync,GrabModeAsync);
-    XGrabButton(dpy,AnyButton,Mod4Mask,root,True,ButtonPressMask,GrabModeAsync,
-		GrabModeAsync,None,None);
-    XGrabButton(dpy,AnyButton,Mod4Mask|Mod1Mask,root,True,ButtonPressMask,GrabModeAsync,
-		GrabModeAsync,None,None);
+	for (i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++) for (j = 0; j < 4; j++)
+	    XGrabButton(dpy,buttons[i].button,buttons[i].mod,root,True,ButtonPressMask,
+			GrabModeAsync,GrabModeAsync,None,None);
 	draw(clients);
     XEvent ev;
 	while (running && !XNextEvent(dpy,&ev))
