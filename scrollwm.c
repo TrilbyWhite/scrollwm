@@ -366,14 +366,25 @@ void spawn(const char *arg) {
 
 void tag(const char *arg) {
 	curtag = arg[0] - 49;
+	Client *c, *t=NULL;
+	for (c = clients; c; c = c->next) if (c->tags & (1<<curtag)) {
+		if (!t) t = c;
+		XRaiseWindow(dpy,c->win);
+	}
+	if (! (focused->tags & (1<<curtag)) && t ) focusclient(t);
 	draw(clients);
 }
 
 void tagconfig(const char *arg) {
+	int i;
 	if (arg[0] == 'h') tags_hide |= (1<<curtag);
 	else if (arg[0] == 's') tags_stik |= (1<<curtag);
 	else if (arg[0] == 'n') { tags_stik &= ~(1<<curtag); tags_hide &= ~(1<<curtag); }
 	else if (arg[0] == 'b') showbar = ~showbar;
+	else if (arg[0] == 'o') for (i = 0; tag_name[i]; i++) {
+		if (i != curtag) tags_hide |= (1<<i);
+		else tags_hide &= ~(1<<i);
+	}
 	draw(clients);
 }
 

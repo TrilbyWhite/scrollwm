@@ -46,7 +46,8 @@ static Key keys[] = {
 	{ MODKEY,			XK_3,		tag,		"3"		},
 	{ MODKEY,			XK_4,		tag,		"4"		},
 	{ MODKEY,			XK_5,		tag,		"5"		},
-	/* tag operations: hide-others, stick, normal(unstick) */
+	/* tag operations: hide-others, hidden,  sticky, normal(unstick+unhide) */
+	{ MODKEY,			XK_o,		tagconfig,	"others"},
 	{ MODKEY,			XK_h,		tagconfig,	"hide"	},
 	{ MODKEY,			XK_s,		tagconfig,	"stick"	},
 	{ MODKEY,			XK_n,		tagconfig,	"normal"},
