@@ -54,9 +54,12 @@ static void maprequest(XEvent *);
 static void motionnotify(XEvent *);
 static void unmapnotify(XEvent *);
 
+static void cycle(const char *);
 static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
+static void killclient(const char *);
+static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
@@ -122,6 +125,40 @@ void window(const char *arg) {
 		focused->y=(showbar ? barheight-2 : -2);
 		focused->h=(showbar ? sh-barheight : sh+4);
 	}
+}
+
+void cycle(const char *arg) {
+	if (!focused) return;
+	Client *prev = focused;
+	if (arg[0] == 'a') {
+		focused = focused->next;
+		if (!focused) focused = clients;
+	}
+	else if (arg[0] == 'v') {
+		while ( (focused=focused->next) && (focused->tags & tags_hide) );
+		if (!focused) {
+			focused = clients;
+			if (clients && (clients->tags & tags_hide) )
+				while ((focused=focused->next)->tags & tags_hide );
+		}
+	}
+	else if (arg[0] == 's') {
+		while ( focused && !onscreen(focused=focused->next) );
+		if (!focused) {
+			if ( !onscreen(focused=clients) )
+				while ( focused && !onscreen(focused=focused->next) );
+			if (!focused) focused = prev;
+		}
+	}
+	else if (arg[0] == 't') {
+		while ( (focused=focused->next) && !(focused->tags & prev->tags) );
+		if (!focused) {
+			focused = clients;
+			if ( clients && !(clients->tags & prev->tags) )
+				while ( (focused=focused->next) && !(focused->tags & prev->tags) );
+		}
+	}	
+	focusclient(focused);
 }
 
 void desktop(const char *arg) {
@@ -246,6 +283,18 @@ void keypress(XEvent *e) {
 			keys[i].func(keys[i].arg);
 }
 
+void killclient(const char *arg) {
+        if (!focused) return;
+        XEvent ev;
+        ev.type = ClientMessage;
+        ev.xclient.window = focused->win;
+        ev.xclient.message_type = XInternAtom(dpy, "WM_PROTOCOLS", True);
+        ev.xclient.format = 32;
+        ev.xclient.data.l[0] = XInternAtom(dpy, "WM_DELETE_WINDOW", True);
+        ev.xclient.data.l[1] = CurrentTime;
+        XSendEvent(dpy,focused->win,False,NoEventMask,&ev);
+}
+
 void maprequest(XEvent *e) {
 	Client *c;
 	static XWindowAttributes wa;
@@ -286,6 +335,14 @@ void motionnotify(XEvent *e) {
 		scrollwindows(clients,xdiff,ydiff);
 	}
 	start.x_root+=xdiff; start.y_root+=ydiff;
+}
+
+Bool onscreen(Client *c) {
+	if (!c) return False;
+	if ((c->x + c->w/2) > 0 && (c->x + c->w/2) < sw	&&
+		(c->y + c->h/2) > 0 && (c->y + c->h/2) < sh )
+		return True;
+	return False;
 }
 
 void quit(const char *arg) {
@@ -342,7 +399,7 @@ void unmapnotify(XEvent *e) {
 		free(c);
 		c = NULL;
 	}
-	if (!focused) focusclient(clients);
+	if (!focused) if ( (focused=clients) ) cycle("screen");
 	draw(clients);
 }
 

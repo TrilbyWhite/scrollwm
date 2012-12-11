@@ -29,12 +29,17 @@ static const char colors[LASTColor][9] = {
 /* key definitions */
 #define MODKEY Mod4Mask
 static Key keys[] = {
-	/* modifier			key			function	argument */
+	/* modifier				key			function	argument */
 	/* launchers: */
-	{ MODKEY,			XK_Return,	spawn,		CMD(TERM)		},
-	{ MODKEY,			XK_p,		spawn,		CMD(DMENU)		},
-	{ MODKEY,			XK_w,		spawn,		CMD("luakit")	},
-	{ MODKEY|ShiftMask,	XK_q,		quit,		NULL			},
+	{ MODKEY,				XK_Return,	spawn,		CMD(TERM)		},
+	{ MODKEY,				XK_p,		spawn,		CMD(DMENU)		},
+	{ MODKEY,				XK_w,		spawn,		CMD("luakit")	},
+	{ MODKEY|ShiftMask,		XK_q,		quit,		NULL			},
+	{ Mod1Mask,				XK_F4,		killclient,	NULL			},
+	{ MODKEY,				XK_Tab, 	cycle,		"screen"		},
+	{ MODKEY|ShiftMask,		XK_Tab, 	cycle,		"visible"		},
+	{ MODKEY|ControlMask,	XK_Tab, 	cycle,		"all"			},
+	{ MODKEY|Mod1Mask,		XK_Tab, 	cycle,		"tag"			},
 	/* select current tag */
 	{ MODKEY,			XK_1,		tag,		"1"		},
 	{ MODKEY,			XK_2,		tag,		"2"		},
