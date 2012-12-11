@@ -141,7 +141,7 @@ void draw(Client *stack) {
 	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
 	XSetForeground(dpy,gc,color.pixel);
 	XFillRectangle(dpy,buf,gc,0,0,sw,barheight);
-	int i, x=10,w;
+	int i, x=10,w=0;
 	int col;
 	for (i = 0; tag_name[i]; i++) {
 		if (!(tags_occ & (1<<i)) && curtag != i) continue;
@@ -157,7 +157,7 @@ void draw(Client *stack) {
 		x+=w+10;
 	}
 	if (focused) {
-		x = MAX(x+20,sw/4);
+		x = MAX(x+20,sw/8);
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
@@ -169,11 +169,16 @@ void draw(Client *stack) {
 		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
 			XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
 			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
-			if (tag_name[i+1]) {
-				XDrawString(dpy,buf,gc,x,fontheight,", ",2);
-				x += XTextWidth(fontstruct,", ",2);
-			}
+			XDrawString(dpy,buf,gc,x,fontheight,", ",2);
+			w = XTextWidth(fontstruct,", ",2);
+			x += w;
 		}
+		x -= w;
+		XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
+		XFillRectangle(dpy,buf,gc,x,0,10,barheight);
+		XAllocNamedColor(dpy,cmap,colors[TagList],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,"]",1);
 	}
 	XCopyArea(dpy,buf,bar,gc,0,0,sw,barheight,0,0);
