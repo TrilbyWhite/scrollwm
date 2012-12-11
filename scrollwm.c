@@ -52,6 +52,7 @@ static void expose(XEvent *);
 static void keypress(XEvent *);
 static void maprequest(XEvent *);
 static void motionnotify(XEvent *);
+static void propertynotify(XEvent *);
 static void unmapnotify(XEvent *);
 
 static void cycle(const char *);
@@ -90,13 +91,14 @@ static Bool running = True, showbar = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
-	[ButtonPress]	= buttonpress,
-	[ButtonRelease]	= buttonrelease,
-	[Expose]		= expose,
-	[KeyPress]		= keypress,
-	[MapRequest]	= maprequest,
-	[MotionNotify]	= motionnotify,
-	[UnmapNotify]	= unmapnotify,
+	[ButtonPress]		= buttonpress,
+	[ButtonRelease]		= buttonrelease,
+	[Expose]			= expose,
+	[KeyPress]			= keypress,
+	[MapRequest]		= maprequest,
+	[PropertyNotify]	= propertynotify,
+	[MotionNotify]		= motionnotify,
+	[UnmapNotify]		= unmapnotify,
 };
 
 void buttonpress(XEvent *e) {
@@ -110,21 +112,15 @@ void buttonpress(XEvent *e) {
 				buttons[i].mod == ((ev->state&~Mod2Mask)&~LockMask) )
 			buttons[i].func(buttons[i].arg);
 	if (c) focusclient(c);
-	if (mousemode != MOff) XGrabPointer(dpy,root,True,PointerMotionMask | ButtonReleaseMask,
-		GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
+	if (mousemode != MOff)
+		XGrabPointer(dpy,root,True,PointerMotionMask | ButtonReleaseMask,
+			GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
 	draw(clients);
 }
 
-void window(const char *arg) {
-	if (arg[0] == 'm') mousemode = MWMove;
-	else if (arg[0] == 'r') mousemode = MWResize;
-	else if (arg[0] == 'g') zoomwindow(focused,1.1,start.x_root,start.y_root);
-	else if (arg[0] == 's') zoomwindow(focused,.92,start.x_root,start.y_root);
-	else if (arg[0] == 'z') {
-		focused->x=-2; focused->w=sw;
-		focused->y=(showbar ? barheight-2 : -2);
-		focused->h=(showbar ? sh-barheight : sh+4);
-	}
+void buttonrelease(XEvent *e) {
+	XUngrabPointer(dpy, CurrentTime);
+	mousemode = MOff;
 }
 
 void cycle(const char *arg) {
@@ -168,11 +164,6 @@ void desktop(const char *arg) {
 	else if (arg[0] == 's') zoom(clients,.92,start.x_root,start.y_root);
 }
 
-void buttonrelease(XEvent *e) {
-	XUngrabPointer(dpy, CurrentTime);
-	mousemode = MOff;
-}
-
 void draw(Client *stack) {
 	/* WINDOWS */
 	XColor color;
@@ -214,7 +205,8 @@ void draw(Client *stack) {
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
 		w = XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
-		if (curtag == i) XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
+		if (curtag == i)
+			XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
 		x+=w+10;
 	}
 	/* overview "icon" */
@@ -345,6 +337,30 @@ Bool onscreen(Client *c) {
 	return False;
 }
 
+void propertynotify(XEvent *e) {
+    XPropertyEvent *ev = &e->xproperty;
+    Client *c;
+    if ( !(c=wintoclient(ev->window)) ) return;
+    if (ev->atom == XA_WM_NAME) {
+        XFree(c->title);
+        c->title = NULL;
+        c->tlen = 0;
+        if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
+        drawbar();
+    }
+    else if (ev->atom == XA_WM_HINTS) {
+        XWMHints *hint;
+        if ( (hint=XGetWMHints(dpy,c->win)) && (hint->flags & XUrgencyHint) )
+			tags_urg |= c->tags;
+        drawbar();
+    }
+}
+
+void buttonrelease(XEvent *e) {
+	XUngrabPointer(dpy, CurrentTime);
+	mousemode = MOff;
+}
+
 void quit(const char *arg) {
 	running = False;
 }
@@ -379,7 +395,10 @@ void tagconfig(const char *arg) {
 	int i;
 	if (arg[0] == 'h') tags_hide |= (1<<curtag);
 	else if (arg[0] == 's') tags_stik |= (1<<curtag);
-	else if (arg[0] == 'n') { tags_stik &= ~(1<<curtag); tags_hide &= ~(1<<curtag); }
+	else if (arg[0] == 'n') {
+		tags_stik &= ~(1<<curtag);
+		tags_hide &= ~(1<<curtag);
+	}
 	else if (arg[0] == 'b') showbar = ~showbar;
 	else if (arg[0] == 'o') for (i = 0; tag_name[i]; i++) {
 		if (i != curtag) tags_hide |= (1<<i);
@@ -412,6 +431,18 @@ void unmapnotify(XEvent *e) {
 	}
 	if (!focused) if ( (focused=clients) ) cycle("screen");
 	draw(clients);
+}
+
+void window(const char *arg) {
+	if (arg[0] == 'm') mousemode = MWMove;
+	else if (arg[0] == 'r') mousemode = MWResize;
+	else if (arg[0] == 'g') zoomwindow(focused,1.1,start.x_root,start.y_root);
+	else if (arg[0] == 's') zoomwindow(focused,.92,start.x_root,start.y_root);
+	else if (arg[0] == 'z') {
+		focused->x=-2; focused->w=sw;
+		focused->y=(showbar ? barheight-2 : -2);
+		focused->h=(showbar ? sh-barheight : sh+4);
+	}
 }
 
 Client *wintoclient(Window w) {
@@ -485,4 +516,4 @@ int main() {
 	return 0;
 }
 
-
+// vim: ts=4
