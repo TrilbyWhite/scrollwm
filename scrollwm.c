@@ -169,7 +169,7 @@ void draw(Client *stack) {
 		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
 			XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
 			x += XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
-			if (tagname[i+1]) {
+			if (tag_name[i+1]) {
 				XDrawString(dpy,buf,gc,x,fontheight,", ",2);
 				x += XTextWidth(fontstruct,", ",2);
 			}
