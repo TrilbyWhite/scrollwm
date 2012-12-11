@@ -141,13 +141,10 @@ void cycle(const char *arg) {
 		}
 	}
 	else if (arg[0] == 's') {
-		while ( focused && (focused=focused->next) && 
-				( (focused->tags & tags_hide) || !onscreen(focused)) );;
+		while (focused && (!onscreen(focused=focused->next) || (focused->tags & tags_hide)) );
 		if (!focused) {
-			if ( !onscreen(focused=clients) )
-				while ( focused && (focused=focused->next) && 
-						( (focused->tags & tags_hide) || !onscreen(focused)) );;
-			if (!focused) focused = prev;
+			if ( !onscreen(focused=clients) || (focused->tags & tags_hide) )
+				while (focused && (!onscreen(focused=focused->next) || (focused->tags & tags_hide)) );
 		}
 	}
 	else if (arg[0] == 't') {
@@ -158,6 +155,7 @@ void cycle(const char *arg) {
 				while ( (focused=focused->next) && !(focused->tags & prev->tags) );
 		}
 	}	
+	if (!focused) focused = prev;
 	focusclient(focused);
 	draw(clients);
 }
