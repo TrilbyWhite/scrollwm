@@ -465,7 +465,7 @@ void tile_one(Client *stack) {
 	stack->h = sh - (showbar ? barheight + 10 : 10);
 }
 
-void tile_bstack(Client *stack,int count) {
+void tile_bstack(Client *stack, int count) {
 	stack->x = 4;
 	stack->y = (showbar ? barheight + 4 : 4);
 	stack->w = sw - 10;
@@ -482,7 +482,18 @@ void tile_bstack(Client *stack,int count) {
 	}
 }
 
-void tile_rstack(Client *stack,int count) {
+void tile_flow(Client *stack, int count) {
+	int x = 0;
+	while (stack) {
+		stack->x = 4 + sw*(x++);
+		stack->y = (showbar ? barheight + 4 : 4);
+		stack->w = sw - 12;
+		stack->h = sh - (showbar ? barheight + 10 : 10);
+		stack=stack->next;
+	}
+}
+
+void tile_rstack(Client *stack, int count) {
 	stack->x = 4;
 	stack->y = (showbar ? barheight + 4 : 4);
 	stack->w = sw/2 - 11;
@@ -499,7 +510,7 @@ void tile_rstack(Client *stack,int count) {
 	}
 }
 
-void tile_ttwm(Client *stack,int count) {
+void tile_ttwm(Client *stack, int count) {
 	stack->x = 4;
 	stack->y = (showbar ? barheight + 4 : 4);
 	stack->w = sw/2 - 11;
@@ -523,6 +534,7 @@ void tile(const char *arg) {
 	if (arg[0] == 't') tile_ttwm(clients,i);
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
+	else if (arg[0] == 'f') tile_flow(clients,i);
 }
 
 void toggletag(const char *arg) {

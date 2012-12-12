@@ -3,7 +3,7 @@
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 
 static const char *tag_name[] = {"1", "2", "3", "4", "5", NULL};
-static const char *tile_modes[] = {"ttwm", "rstack", "bstack", NULL};
+static const char *tile_modes[] = {"ttwm", "rstack", "bstack", "flow", NULL};
 
 #define SCROLLWM_CURSOR		XC_left_ptr
 
@@ -26,7 +26,7 @@ static const Bool	focusfollowmouse	= False;
 static const Bool	highlightfocused	= True;
 static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
-static const int	animatespeed		= 3;
+static const int	animatespeed		= 12;
 
 #define DMENU		"dmenu_run -fn \"-*-terminus-bold-r-*--12-120-72-72-c-60-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
 #define TERM		"urxvt" 		/* or "urxvtc","xterm","terminator",etc */
