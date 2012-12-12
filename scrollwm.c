@@ -66,6 +66,7 @@ static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
 static void killclient(const char *);
+static void monocle(const char *arg) {
 static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
@@ -353,6 +354,10 @@ void maprequest(XEvent *e) {
 		focusclient(c);
 	}
 	draw(clients);
+}
+
+void monocle(const char *arg) {
+	if (focused) tile_one(focused);
 }
 
 void motionnotify(XEvent *e) {

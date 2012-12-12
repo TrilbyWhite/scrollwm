@@ -22,7 +22,7 @@ static const float	zoom_min	= 0.2;
 static const float	win_min		= 30;
 static const float	zoom_up		= 1.1;
 static const float	zoom_down	= 0.9;
-static const Bool	focusfollowmouse	= True;
+static const Bool	focusfollowmouse	= False;
 static const Bool	highlightfocused	= True;
 static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
@@ -74,7 +74,7 @@ static Button buttons[] = {
 	{0,					1,			window,		"move"		},
 	{0,					2,			cycle_tile,	NULL		},
 	{0,					3,			window,		"resize"	},
-//	{0,					4,			desktop,	"grow"		},
+	{0,					4,			monocle,	NULL		},
 //	{0,					5,			desktop,	"shrink"	},
 	{MODKEY,			1,			window,		"move"		},
 	{MODKEY,			2,			window,		"zoom"		},
