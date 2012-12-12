@@ -73,6 +73,7 @@ static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
 static void tag(const char *);
 static void tagconfig(const char *);
+static void tile_one(Client *);
 static void tile(const char *);
 static void toggletag(const char *);
 static void window(const char *);
