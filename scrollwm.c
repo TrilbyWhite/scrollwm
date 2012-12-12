@@ -66,7 +66,7 @@ static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
 static void killclient(const char *);
-static void monocle(const char *arg) {
+static void monocle(const char *);
 static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
