@@ -58,6 +58,7 @@ static void propertynotify(XEvent *);
 static void unmapnotify(XEvent *);
 
 static void cycle(const char *);
+static void cycle_tile(const char *);
 static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
@@ -68,6 +69,7 @@ static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
 static void tag(const char *);
 static void tagconfig(const char *);
+static void tile(const char *);
 static void toggletag(const char *);
 static void window(const char *);
 static Client *wintoclient(Window);
@@ -92,6 +94,7 @@ static Client *focused;
 static Bool running = True, showbar = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
+static int ntilemode = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
@@ -158,6 +161,11 @@ void cycle(const char *arg) {
 	if (!focused) focused = prev;
 	focusclient(focused);
 	draw(clients);
+}
+
+void cycle_tile(const char *arg) {
+	if (!tile_modes[++ntilemode]) ntilemode=0;
+	tile(tile_modes[ntilemode]);
 }
 
 void desktop(const char *arg) {
@@ -402,12 +410,83 @@ void tagconfig(const char *arg) {
 		tags_stik &= ~(1<<curtag);
 		tags_hide &= ~(1<<curtag);
 	}
-	else if (arg[0] == 'b') showbar = ~showbar;
+	else if (arg[0] == 'b') {
+		showbar = !showbar;
+		if (showbar) XMoveWindow(dpy,bar,0,0);
+		else XMoveWindow(dpy,bar,0,-barheight);
+	}
 	else if (arg[0] == 'o') for (i = 0; tag_name[i]; i++) {
 		if (i != curtag) tags_hide |= (1<<i);
 		else tags_hide &= ~(1<<i);
 	}
 	draw(clients);
+}
+
+void tile_one(Client *stack) {
+	stack->x = 4;
+	stack->y = (showbar ? barheight + 4 : 4);
+	stack->w = sw - 12;
+	stack->h = sh - (showbar ? barheight + 10 : 10);
+}
+
+void tile_bstack(Client *stack,int count) {
+	stack->x = 4;
+	stack->y = (showbar ? barheight + 4 : 4);
+	stack->w = sw - 10;
+	stack->h = (sh - (showbar ? barheight : 0))/2 - 11;
+	XRaiseWindow(dpy,stack->next->win);
+	int i=0; int w = (sw - 10)/(count-1) + 1;
+	while ((stack=stack->next)) {
+		stack->x = 4 + i*w;
+		stack->y = sh/2 + 8;
+		stack->w = MAX(w - 9,WIN_MIN);
+		stack->h = sh/2 - 14;
+		i++;
+		if (!stack->next) stack->w = MAX(sw - stack->x - 6,WIN_MIN);
+	}
+}
+
+void tile_rstack(Client *stack,int count) {
+	stack->x = 4;
+	stack->y = (showbar ? barheight + 4 : 4);
+	stack->w = sw/2 - 11;
+	stack->h = sh - (showbar ? barheight + 10 : 10);
+	XRaiseWindow(dpy,stack->next->win);
+	int i=0; int h = (sh - (showbar ? barheight + 10 : 10))/(count-1) + 1;
+	while ((stack=stack->next)) {
+		stack->x = sw/2 + 4;
+		stack->y = (showbar ? barheight + 4 : 4) + i*h;
+		stack->w = sw/2 - 11;
+		stack->h = MAX(h - 9,WIN_MIN);
+		i++;
+		if (!stack->next) stack->h = MAX(sh - stack->y - 6,WIN_MIN);
+	}
+}
+
+void tile_ttwm(Client *stack,int count) {
+	stack->x = 4;
+	stack->y = (showbar ? barheight + 4 : 4);
+	stack->w = sw/2 - 11;
+	stack->h = sh - (showbar ? barheight + 10 : 10);
+	XRaiseWindow(dpy,stack->next->win);
+	while ((stack=stack->next)) {
+		stack->x = sw/2 + 4;
+		stack->y = (showbar ? barheight + 4 : 4);
+		stack->w = sw/2 - 11;
+		stack->h = sh - (showbar ? barheight + 10 : 10);
+	}
+}
+
+void tile(const char *arg) {
+/* this is a very plain tiling function, just as a placeholder for now */
+	int i;
+	Client *c;
+	for (c = clients, i = 0; c; c = c->next, i++);
+	if (i == 0) return;
+	else if (i == 1) { tile_one(clients); return; }
+	if (arg[0] == 't') tile_ttwm(clients,i);
+	else if (arg[0] == 'r') tile_rstack(clients,i);
+	else if (arg[0] == 'b') tile_bstack(clients,i);
 }
 
 void toggletag(const char *arg) {

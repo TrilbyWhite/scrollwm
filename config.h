@@ -3,6 +3,7 @@
 static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 
 static const char *tag_name[] = {"1", "2", "3", "4", "5", NULL};
+static const char *tile_modes[] = {"ttwm", "rstack", "bstack", NULL};
 
 #define SCROLLWM_CURSOR		XC_left_ptr
 
@@ -51,6 +52,8 @@ static Key keys[] = {
 	{ MODKEY,			XK_h,		tagconfig,	"hide"	},
 	{ MODKEY,			XK_s,		tagconfig,	"stick"	},
 	{ MODKEY,			XK_n,		tagconfig,	"normal"},
+	/* toggle statusbar */
+	{ MODKEY,			XK_a,		tagconfig,	"bar"},
 	/* assign/remove a window to/from a tag */
 	{ MODKEY|Mod1Mask,	XK_1,		toggletag,	"1"		},
 	{ MODKEY|Mod1Mask,	XK_2,		toggletag,	"2"		},
@@ -67,8 +70,8 @@ static Button buttons[] = {
 	{MODKEY,			4,			window,		"grow"		},
 	{MODKEY,			5,			window,		"shrink"	},
 	{MODKEY|Mod1Mask,	1,			desktop,	"move"		},
-	//{MODKEY|Mod1Mask,	2,			desktop,	"zoom"		},
-	//{MODKEY|Mod1Mask,	3,			desktop,	"resize"	},
+	{MODKEY|Mod1Mask,	2,			tile,		"rstack"	},
+	{MODKEY|Mod1Mask,	3,			cycle_tile,	NULL		},
 	{MODKEY|Mod1Mask,	4,			desktop,	"grow"		},
 	{MODKEY|Mod1Mask,	5,			desktop,	"shrink"	},
 };
