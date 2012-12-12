@@ -51,6 +51,7 @@ struct Client {
 
 static void buttonpress(XEvent *);
 static void buttonrelease(XEvent *);
+static void destroynotify(XEvent *);
 static void enternotify(XEvent *);
 static void expose(XEvent *);
 static void keypress(XEvent *);
@@ -76,6 +77,7 @@ static void tagconfig(const char *);
 static void tile_one(Client *);
 static void tile(const char *);
 static void toggletag(const char *);
+static void unmanage(Client *);
 static void window(const char *);
 static Client *wintoclient(Window);
 static void zoomwindow(Client *,float,int,int);
@@ -103,6 +105,7 @@ static int ntilemode = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
+	[DestroyNotify]		= destroynotify,
 	[EnterNotify]		= enternotify,
 	[Expose]			= expose,
 	[KeyPress]			= keypress,
@@ -188,6 +191,12 @@ void cycle(const char *arg) {
 void cycle_tile(const char *arg) {
 	if (!tile_modes[++ntilemode]) ntilemode=0;
 	tile(tile_modes[ntilemode]);
+}
+
+void destroynotify(XEvent *e) {
+	Client *c;
+	if (!(c=wintoclient(e->xunmap.window))) return;
+	if (!e->xunmap.send_event) unmanage(c);
 }
 
 void desktop(const char *arg) {
@@ -550,23 +559,25 @@ void toggletag(const char *arg) {
 	draw(clients);
 }
 
-void unmapnotify(XEvent *e) {
-	Client *c,*t;
-	XUnmapEvent *ev = &e->xunmap;
-	if (!(c=wintoclient(ev->window))) return;
-	if (!ev->send_event) {
-		if (c == focused) focusclient(c->next);
-		if (c == clients) clients = c->next;
-		else {
-			for (t = clients; t && t->next != c; t = t->next);
-			t->next = c->next;
-		}
-		XFree(c->title);
-		free(c);
-		c = NULL;
+void unmanage(Client *c) {
+	Client *t;
+	if (c == focused) focusclient(c->next);
+	if (c == clients) clients = c->next;
+	else {
+		for (t = clients; t && t->next != c; t = t->next);
+		t->next = c->next;
 	}
+	XFree(c->title);
+	free(c);
+	c = NULL;
 	if (!focused) if ( (focused=clients) ) cycle("screen");
 	draw(clients);
+}
+
+void unmapnotify(XEvent *e) {
+	Client *c;
+	if (!(c=wintoclient(e->xunmap.window))) return;
+	if (!e->xunmap.send_event) unmanage(c);
 }
 
 void window(const char *arg) {
@@ -603,7 +614,15 @@ void zoom(Client *stack, float factor, int x, int y) {
 	}
 	draw(clients);
 }
-	
+
+int xerror(Display *d, XErrorEvent *ev) {
+	char msg[1024];
+	XGetErrorText(dpy,ev->error_code,msg,sizeof(msg));
+	fprintf(stderr,"====== SCROLLWM ERROR =====\nrequest=%d error=%d\n%s\n===========================\n",
+		ev->request_code,ev->error_code,msg);
+	return 0;
+}
+
 
 int main() {
     if(!(dpy = XOpenDisplay(0x0))) return 1;
@@ -611,6 +630,7 @@ int main() {
 	sw = DisplayWidth(dpy,scr);
 	sh = DisplayHeight(dpy,scr);
     root = DefaultRootWindow(dpy);
+	XSetErrorHandler(xerror);
 	XDefineCursor(dpy,root,XCreateFontCursor(dpy,SCROLLWM_CURSOR));
 
 	cmap = DefaultColormap(dpy,scr);
