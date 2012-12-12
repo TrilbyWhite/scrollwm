@@ -110,6 +110,7 @@ void buttonpress(XEvent *e) {
 	XButtonEvent *ev = &e->xbutton;
 	Client *c;
 	if ((c=wintoclient(ev->subwindow))) focused = c;
+	if (!(ev->state || focused)) return;
 	int i;
 	start = *ev;
 	for (i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
