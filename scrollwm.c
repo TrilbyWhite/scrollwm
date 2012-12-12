@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
@@ -50,6 +51,7 @@ struct Client {
 
 static void buttonpress(XEvent *);
 static void buttonrelease(XEvent *);
+static void enternotify(XEvent *);
 static void expose(XEvent *);
 static void keypress(XEvent *);
 static void maprequest(XEvent *);
@@ -57,6 +59,7 @@ static void motionnotify(XEvent *);
 static void propertynotify(XEvent *);
 static void unmapnotify(XEvent *);
 
+static void animate();
 static void cycle(const char *);
 static void cycle_tile(const char *);
 static void desktop(const char *);
@@ -98,6 +101,7 @@ static int ntilemode = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
+	[EnterNotify]		= enternotify,
 	[Expose]			= expose,
 	[KeyPress]			= keypress,
 	[MapRequest]		= maprequest,
@@ -105,6 +109,20 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[MotionNotify]		= motionnotify,
 	[UnmapNotify]		= unmapnotify,
 };
+
+void animate() {
+	if ( !animations || !focused || !scrolltofocused || onscreen(focused)) return;
+	int tx=-focused->x+4, ty=-focused->y+(showbar?barheight+4:4);
+	int dx = (tx == 0 ? 0 : (tx > 0 ? animatespeed+1 : -(animatespeed+1)));
+	int dy = (ty == 0 ? 0 : (ty > 0 ? animatespeed+1 : -(animatespeed+1)));
+	while (abs(tx) > animatespeed || abs(ty) > animatespeed) {
+		scrollwindows(clients,dx,dy);
+		tx -= dx; ty -= dy;
+		if (abs(tx) < animatespeed+1) dx = 0;
+		if (abs(ty) < animatespeed+1) dy = 0;
+	}
+	scrollwindows(clients,tx,ty);
+}
 
 void buttonpress(XEvent *e) {
 	XButtonEvent *ev = &e->xbutton;
@@ -161,6 +179,7 @@ void cycle(const char *arg) {
 	}	
 	if (!focused) focused = prev;
 	focusclient(focused);
+	animate();
 	draw(clients);
 }
 
@@ -195,9 +214,10 @@ void draw(Client *stack) {
 			continue;
 		}
 		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,
-			MAX(stack->w,WIN_MIN),MAX(stack->h,WIN_MIN));
+			MAX(stack->w,win_min),MAX(stack->h,win_min));
 		XAllocNamedColor(dpy,cmap,
-			colors[(stack->tags & tags_stik ? Sticky : Normal)],&color,&color);
+			colors[	(highlightfocused && stack == focused ? Hidden : 
+					(stack->tags & tags_stik ? Sticky : Normal))],&color,&color);
 		wa.border_pixel = color.pixel;
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
@@ -267,6 +287,15 @@ void draw(Client *stack) {
 	XFlush(dpy);
 }
 
+void enternotify(XEvent *e) {
+	if (!focusfollowmouse) return;
+	Client *c = wintoclient(e->xcrossing.window);
+	if (c) {
+		focusclient(c);
+		draw(clients);
+	}
+}
+
 void expose(XEvent *e) {
 	draw(clients);
 }
@@ -316,7 +345,7 @@ void maprequest(XEvent *e) {
 		if (c->y < barheight+2 && showbar) c->y = barheight+2;
 		c->tags = (1<<curtag);
 		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
-		XSelectInput(dpy,c->win,PropertyChangeMask);
+		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
 		c->next = clients;
 		clients = c;
 		XSetWindowBorderWidth(dpy,c->win,2);
@@ -440,10 +469,10 @@ void tile_bstack(Client *stack,int count) {
 	while ((stack=stack->next)) {
 		stack->x = 4 + i*w;
 		stack->y = sh/2 + 8;
-		stack->w = MAX(w - 9,WIN_MIN);
+		stack->w = MAX(w - 9,win_min);
 		stack->h = sh/2 - 14;
 		i++;
-		if (!stack->next) stack->w = MAX(sw - stack->x - 6,WIN_MIN);
+		if (!stack->next) stack->w = MAX(sw - stack->x - 6,win_min);
 	}
 }
 
@@ -458,9 +487,9 @@ void tile_rstack(Client *stack,int count) {
 		stack->x = sw/2 + 4;
 		stack->y = (showbar ? barheight + 4 : 4) + i*h;
 		stack->w = sw/2 - 11;
-		stack->h = MAX(h - 9,WIN_MIN);
+		stack->h = MAX(h - 9,win_min);
 		i++;
-		if (!stack->next) stack->h = MAX(sh - stack->y - 6,WIN_MIN);
+		if (!stack->next) stack->h = MAX(sh - stack->y - 6,win_min);
 	}
 }
 
@@ -537,8 +566,8 @@ Client *wintoclient(Window w) {
 
 void zoomwindow(Client *c, float factor, int x, int y) {
 	c->w *= factor; c->h *= factor;
-	if (c->w < ZOOM_MIN) c->w = ZOOM_MIN;
-	if (c->h < ZOOM_MIN) c->h = ZOOM_MIN;
+	if (c->w < zoom_min) c->w = zoom_min;
+	if (c->h < zoom_min) c->h = zoom_min;
 	c->x = (c->x-x) * factor + x;
 	c->y = (c->y-y) * factor + y;
 }

@@ -18,10 +18,15 @@ static const char colors[LASTColor][9] = {
 	[TagList]		= "#424242",
 };
 
-#define ZOOM_MIN	0.2
-#define WIN_MIN		30
-#define ZOOM_UP		1.1
-#define ZOOM_DOWN	0.89
+static const float	zoom_min	= 0.2;
+static const float	win_min		= 30;
+static const float	zoom_up		= 1.1;
+static const float	zoom_down	= 0.9;
+static const Bool	focusfollowmouse	= True;
+static const Bool	highlightfocused	= True;
+static const Bool	scrolltofocused		= True;
+static const Bool	animations			= True;
+static const int	animatespeed		= 3;
 
 #define DMENU		"dmenu_run -fn \"-*-terminus-bold-r-*--12-120-72-72-c-60-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
 #define TERM		"urxvt" 		/* or "urxvtc","xterm","terminator",etc */
@@ -67,7 +72,7 @@ static Key keys[] = {
 static Button buttons[] = {
 	/* modifier			button		function 	arg */
 	{0,					1,			window,		"move"		},
-	{0,					2,			tile,		"rstack"	},
+	{0,					2,			cycle_tile,	NULL		},
 	{0,					3,			window,		"resize"	},
 //	{0,					4,			desktop,	"grow"		},
 //	{0,					5,			desktop,	"shrink"	},
