@@ -262,8 +262,14 @@ void draw(Client *stack) {
 	if (focused) {
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
 		XSetForeground(dpy,gc,color.pixel);
-		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
-		x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
+		if (focused->title) {
+			XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
+			x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
+		}
+		else {
+			XDrawString(dpy,buf,gc,x,fontheight,"UNNAMED",7);
+			x += XTextWidth(fontstruct,"UNNAMED",7) + 10;
+		}
 		XAllocNamedColor(dpy,cmap,colors[TagList],&color,&color);
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,"[",1);
