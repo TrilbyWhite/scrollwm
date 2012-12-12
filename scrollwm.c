@@ -144,7 +144,7 @@ void buttonpress(XEvent *e) {
 	if (mousemode != MOff)
 		XGrabPointer(dpy,root,True,PointerMotionMask | ButtonReleaseMask,
 			GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
-	draw(clients);
+	//draw(clients);
 }
 
 void buttonrelease(XEvent *e) {
@@ -374,6 +374,7 @@ void maprequest(XEvent *e) {
 
 void monocle(const char *arg) {
 	if (focused) tile_one(focused);
+	draw(clients);
 }
 
 void motionnotify(XEvent *e) {
@@ -550,6 +551,7 @@ void tile(const char *arg) {
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
 	else if (arg[0] == 'f') tile_flow(clients,i);
+	draw(clients);
 }
 
 void toggletag(const char *arg) {
@@ -631,7 +633,7 @@ int main() {
 	sh = DisplayHeight(dpy,scr);
     root = DefaultRootWindow(dpy);
 	XSetErrorHandler(xerror);
-	XDefineCursor(dpy,root,XCreateFontCursor(dpy,SCROLLWM_CURSOR));
+	XDefineCursor(dpy,root,XCreateFontCursor(dpy,scrollwm_cursor));
 
 	cmap = DefaultColormap(dpy,scr);
 	XGCValues val;
