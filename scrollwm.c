@@ -574,7 +574,7 @@ int main() {
 	wa.event_mask = ExposureMask;
 	XChangeWindowAttributes(dpy,bar,CWOverrideRedirect|CWEventMask,&wa);
 	XMapWindow(dpy,bar);
-	wa.event_mask = FocusChangeMask | SubstructureNotifyMask | ButtonReleaseMask |
+	wa.event_mask = FocusChangeMask | SubstructureNotifyMask | ButtonPressMask | ButtonReleaseMask |
 			PropertyChangeMask | SubstructureRedirectMask | StructureNotifyMask;
 	XChangeWindowAttributes(dpy,root,CWEventMask,&wa);
 	XSelectInput(dpy,root,wa.event_mask);
@@ -586,6 +586,7 @@ int main() {
 		if ( (code=XKeysymToKeycode(dpy,keys[i].keysym)) ) for (j = 0; j < 4; j++)
 			XGrabKey(dpy,code,keys[i].mod|mods[j],root,True,GrabModeAsync,GrabModeAsync);
 	for (i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++) for (j = 0; j < 4; j++)
+		if (buttons[i].mod)
 	    XGrabButton(dpy,buttons[i].button,buttons[i].mod,root,True,ButtonPressMask,
 			GrabModeAsync,GrabModeAsync,None,None);
 	draw(clients);

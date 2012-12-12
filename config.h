@@ -62,8 +62,15 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,	XK_5,		toggletag,	"5"		},
 };
 
+/* buttons with no modifiers only work when triggered with the	*/
+/* mouse pointer over the desktop								*/
 static Button buttons[] = {
 	/* modifier			button		function 	arg */
+	{0,					1,			window,		"move"		},
+	{0,					2,			tile,		"rstack"	},
+	{0,					3,			window,		"resize"	},
+//	{0,					4,			desktop,	"grow"		},
+//	{0,					5,			desktop,	"shrink"	},
 	{MODKEY,			1,			window,		"move"		},
 	{MODKEY,			2,			window,		"zoom"		},
 	{MODKEY,			3,			window,		"resize"	},
