@@ -147,7 +147,6 @@ void buttonpress(XEvent *e) {
 	if (mousemode != MOff)
 		XGrabPointer(dpy,root,True,PointerMotionMask | ButtonReleaseMask,
 			GrabModeAsync,GrabModeAsync, None, None, CurrentTime);
-	//draw(clients);
 }
 
 void buttonrelease(XEvent *e) {
@@ -258,18 +257,20 @@ void draw(Client *stack) {
 		x+=w+10;
 	}
 	/* overview "icon" */
-	x = MAX(x+20,sw/10);
-	XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
-	XDrawRectangle(dpy,buf,gc,x,fontheight-9,6,6);
-	XDrawRectangle(dpy,buf,gc,x,fontheight-6,6,6);
-	XDrawRectangle(dpy,buf,gc,x+3,fontheight-9,6,6);
-	XDrawRectangle(dpy,buf,gc,x+3,fontheight-6,6,6);
-	XAllocNamedColor(dpy,cmap,colors[Hidden],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
-	for (i = 0; i < 3; i++) for (w = 0; w < 3; w++) if (loc[i*3+w])
-	XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
-	x+=20;
+	if (clients) {
+		x = MAX(x+20,sw/10);
+		XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
+		XDrawRectangle(dpy,buf,gc,x,fontheight-9,6,6);
+		XDrawRectangle(dpy,buf,gc,x,fontheight-6,6,6);
+		XDrawRectangle(dpy,buf,gc,x+3,fontheight-9,6,6);
+		XDrawRectangle(dpy,buf,gc,x+3,fontheight-6,6,6);
+		XAllocNamedColor(dpy,cmap,colors[Hidden],&color,&color);
+		XSetForeground(dpy,gc,color.pixel);
+		for (i = 0; i < 3; i++) for (w = 0; w < 3; w++) if (loc[i*3+w])
+		XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
+		x+=20;
+	}
 	/* title */
 	if (focused) {
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
