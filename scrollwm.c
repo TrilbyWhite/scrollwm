@@ -83,11 +83,12 @@ static Client *wintoclient(Window);
 static void zoomwindow(Client *,float,int,int);
 static void zoom(Client *,float,int,int);
 
+static const int max_status_line = 512;
 #include "config.h"
 
 static Display * dpy;
 static Window root, bar;
-static Pixmap buf;
+static Pixmap buf, sbar;
 static int scr, sw, sh;
 static GC gc;
 static Colormap cmap;
@@ -102,6 +103,8 @@ static Bool running = True, showbar = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
 static int ntilemode = 0;
+static int statuswidth = 0;
+static FILE *inpipe;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
@@ -299,6 +302,9 @@ void draw(Client *stack) {
 		XSetForeground(dpy,gc,color.pixel);
 		XDrawString(dpy,buf,gc,x,fontheight,"]",1);
 	}
+	/* USER STATUS INFO */
+	if (statuswidth)
+		XCopyArea(dpy,sbar,buf,gc,0,0,statuswidth,barheight,sw-statuswidth,0);
 	XCopyArea(dpy,buf,bar,gc,0,0,sw,barheight,0,0);
 	XRaiseWindow(dpy,bar);
 	XFlush(dpy);
@@ -365,7 +371,7 @@ void maprequest(XEvent *e) {
 		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
 		c->next = clients;
 		clients = c;
-		XSetWindowBorderWidth(dpy,c->win,2);
+		XSetWindowBorderWidth(dpy,c->win,borderwidth);
 		XMapWindow(dpy,c->win);
 		focusclient(c);
 	}
@@ -438,6 +444,40 @@ void scrollwindows(Client *stack, int x, int y) {
 
 void spawn(const char *arg) {
 	system(arg);
+}
+
+void status(char *msg) {
+	char *col = (char *) calloc(8,sizeof(char));
+	char *t,*c = msg;
+	int l;
+	XColor color;
+	statuswidth = 0;
+	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	XFillRectangle(dpy,sbar,gc,0,0,sw/2,barheight);
+	XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	while(*c != '\n') {
+		if (*c == '{') {
+			if (*(++c) == '#') {
+				strncpy(col,c,7);
+				XAllocNamedColor(dpy,cmap,col,&color,&color);
+				XSetForeground(dpy,gc,color.pixel);
+			}
+			c = strchr(c,'}')+1;
+		}
+		else {
+			if ((t=strchr(c,'{'))==NULL) t=strchr(c,'\n');
+			l = (t == NULL ? 0 : t-c);
+			if (l) {
+				XDrawString(dpy,sbar,gc,statuswidth,fontheight,c,l);
+				statuswidth+=XTextWidth(fontstruct,c,l);
+			}
+			c+=l;
+		}
+	}
+	free(col);
+	draw(clients);
 }
 
 void tag(const char *arg) {
@@ -626,7 +666,10 @@ int xerror(Display *d, XErrorEvent *ev) {
 }
 
 
-int main() {
+int main(int argc, const char **argv) {
+	if (argc > 1) inpipe = popen(argv[1],"r");
+	else inpipe = stdin;
+	/* init X */
     if(!(dpy = XOpenDisplay(0x0))) return 1;
 	scr = DefaultScreen(dpy);
 	sw = DisplayWidth(dpy,scr);
@@ -634,7 +677,7 @@ int main() {
     root = DefaultRootWindow(dpy);
 	XSetErrorHandler(xerror);
 	XDefineCursor(dpy,root,XCreateFontCursor(dpy,scrollwm_cursor));
-
+	/* gc init */
 	cmap = DefaultColormap(dpy,scr);
 	XGCValues val;
 	val.font = XLoadFont(dpy,font);
@@ -642,37 +685,61 @@ int main() {
 	fontheight = fontstruct->ascent+1;
 	barheight = fontstruct->ascent+fontstruct->descent+2;
 	gc = XCreateGC(dpy,root,GCFont,&val);
-
+	/* buffers and windows */
 	bar = XCreateSimpleWindow(dpy,root,0,0,sw,barheight,0,0,0);
 	buf = XCreatePixmap(dpy,root,sw,barheight,DefaultDepth(dpy,scr));
+	sbar = XCreatePixmap(dpy,root,sw/2,barheight,DefaultDepth(dpy,scr));
 	XSetWindowAttributes wa;
 	wa.override_redirect = True;
 	wa.event_mask = ExposureMask;
 	XChangeWindowAttributes(dpy,bar,CWOverrideRedirect|CWEventMask,&wa);
 	XMapWindow(dpy,bar);
-	wa.event_mask = FocusChangeMask | SubstructureNotifyMask | ButtonPressMask | ButtonReleaseMask |
-			PropertyChangeMask | SubstructureRedirectMask | StructureNotifyMask;
+	wa.event_mask = FocusChangeMask | SubstructureNotifyMask | ButtonPressMask |
+			ButtonReleaseMask | PropertyChangeMask | SubstructureRedirectMask |
+			StructureNotifyMask;
 	XChangeWindowAttributes(dpy,root,CWEventMask,&wa);
 	XSelectInput(dpy,root,wa.event_mask);
+	/* key and mouse binding */
 	unsigned int mods[] = {0, LockMask, Mod2Mask, LockMask|Mod2Mask};
 	KeyCode code;
 	XUngrabKey(dpy,AnyKey,AnyModifier,root);
 	int i,j;
 	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
 		if ( (code=XKeysymToKeycode(dpy,keys[i].keysym)) ) for (j = 0; j < 4; j++)
-			XGrabKey(dpy,code,keys[i].mod|mods[j],root,True,GrabModeAsync,GrabModeAsync);
+			XGrabKey(dpy,code,keys[i].mod|mods[j],root,True,
+				GrabModeAsync,GrabModeAsync);
 	for (i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++) for (j = 0; j < 4; j++)
 		if (buttons[i].mod)
 	    XGrabButton(dpy,buttons[i].button,buttons[i].mod,root,True,ButtonPressMask,
 			GrabModeAsync,GrabModeAsync,None,None);
+	/* main loop */
 	draw(clients);
     XEvent ev;
-	while (running && !XNextEvent(dpy,&ev))
-		if (handler[ev.type])
-			handler[ev.type](&ev);
+	int xfd, sfd;
+	fd_set fds;
+	sfd = fileno(inpipe);
+	xfd = ConnectionNumber(dpy);
+	char *line = (char *) calloc(max_status_line+1,sizeof(char));
+	while (running) {
+		FD_ZERO(&fds);
+		FD_SET(sfd,&fds);
+		FD_SET(xfd,&fds);
+		select(xfd+1,&fds,0,0,NULL);
+		if (FD_ISSET(xfd,&fds)) while (XPending(dpy)) {
+			XNextEvent(dpy,&ev);
+			if (handler[ev.type]) handler[ev.type](&ev);
+		}
+		if (FD_ISSET(sfd,&fds)) {
+			if (fgets(line,max_status_line,inpipe))
+				status(line);
+		}
+	}
+	/* clean up */
+	free(line);
 	XFreeFontInfo(NULL,fontstruct,1);
 	XUnloadFont(dpy,val.font);
 	return 0;
 }
 
 // vim: ts=4
+
