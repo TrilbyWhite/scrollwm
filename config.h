@@ -26,6 +26,7 @@ static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
 static const int	animatespeed		= 18;
 static const int	borderwidth			= 1;
+static const int	tilegap				= 4;
 
 #define DMENU		"dmenu_run -fn \"-*-terminus-bold-r-*--12-120-72-72-c-60-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
 #define TERM		"urxvt" 		/* or "urxvtc","xterm","terminator",etc */

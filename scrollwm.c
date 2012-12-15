@@ -120,7 +120,7 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 
 void animate() {
 	if ( !animations || !focused || !scrolltofocused || onscreen(focused)) return;
-	int tx=-focused->x+4, ty=-focused->y+(showbar?barheight+4:4);
+	int tx=-focused->x+tilegap, ty=-focused->y+(showbar?barheight:0)+tilegap;
 	int dx = (tx == 0 ? 0 : (tx > 0 ? animatespeed+1 : -(animatespeed+1)));
 	int dy = (ty == 0 ? 0 : (ty > 0 ? animatespeed+1 : -(animatespeed+1)));
 	while (abs(tx) > animatespeed || abs(ty) > animatespeed) {
@@ -366,7 +366,10 @@ void maprequest(XEvent *e) {
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
 		c->w = attr.width; c->h = attr.height;
-		if (c->y < barheight+2 && showbar) c->y = barheight+2;
+		if (c->y < barheight+tilegap && showbar) {
+			c->y = barheight+tilegap;
+			c->x = tilegap;
+		}
 		c->tags = (1<<curtag);
 		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
 		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
@@ -516,68 +519,73 @@ void tagconfig(const char *arg) {
 }
 
 void tile_one(Client *stack) {
-	stack->x = 4;
-	stack->y = (showbar ? barheight + 4 : 4);
-	stack->w = sw - 12;
-	stack->h = sh - (showbar ? barheight + 10 : 10);
+	stack->x = tilegap;
+	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->w = sw - 2*(tilegap + borderwidth);
+	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 }
 
 void tile_bstack(Client *stack, int count) {
-	stack->x = 4;
-	stack->y = (showbar ? barheight + 4 : 4);
-	stack->w = sw - 10;
-	stack->h = (sh - (showbar ? barheight : 0))/2 - 11;
-	XRaiseWindow(dpy,stack->next->win);
-	int i=0; int w = (sw - 10)/(count-1) + 1;
+	int w = (sw - tilegap)/(count-1);
+	int h = (sh - (showbar ? barheight : 0) - tilegap)/2 - (tilegap + 2*borderwidth);
+	stack->x = tilegap;
+	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->w = sw - 2*(tilegap + borderwidth);
+	stack->h = h;
+	int i=0;
 	while ((stack=stack->next)) {
-		stack->x = 4 + i*w;
-		stack->y = sh/2 + 8;
-		stack->w = MAX(w - 9,win_min);
-		stack->h = sh/2 - 14;
+		stack->x = tilegap + i*w;
+		stack->y = (showbar ? barheight : 0) + h + 2*(tilegap+borderwidth);
+		stack->w = MAX(w - tilegap - 2*borderwidth,win_min);
+		stack->h = h;
 		i++;
-		if (!stack->next) stack->w = MAX(sw - stack->x - 6,win_min);
+		if (!stack->next) stack->w = MAX(sw - stack->x - tilegap - 2*borderwidth,win_min);
 	}
 }
 
 void tile_flow(Client *stack, int count) {
 	int x = 0;
 	while (stack) {
-		stack->x = 4 + sw*(x++);
-		stack->y = (showbar ? barheight + 4 : 4);
-		stack->w = sw - 12;
-		stack->h = sh - (showbar ? barheight + 10 : 10);
-		stack=stack->next;
+		stack->x = tilegap + sw*(x++);
+		stack->y = (showbar ? barheight : 0) + tilegap;
+		stack->w = sw - 2*(tilegap + borderwidth);
+		stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
+		stack = stack->next;
 	}
 }
 
 void tile_rstack(Client *stack, int count) {
-	stack->x = 4;
-	stack->y = (showbar ? barheight + 4 : 4);
-	stack->w = sw/2 - 11;
-	stack->h = sh - (showbar ? barheight + 10 : 10);
-	XRaiseWindow(dpy,stack->next->win);
-	int i=0; int h = (sh - (showbar ? barheight + 10 : 10))/(count-1) + 1;
+	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
+	int h = (sh - (showbar ? barheight : 0) - tilegap)/(count-1);
+	stack->x = tilegap;
+	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->w = w;
+	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
+	int i=0;
 	while ((stack=stack->next)) {
-		stack->x = sw/2 + 4;
-		stack->y = (showbar ? barheight + 4 : 4) + i*h;
-		stack->w = sw/2 - 11;
-		stack->h = MAX(h - 9,win_min);
+		stack->x = w + 2*(tilegap+borderwidth);
+		stack->y = (showbar ? barheight : 0) + tilegap + i*h;
+		stack->w = w;
+		stack->h = MAX(h - tilegap - 2*borderwidth,win_min);
 		i++;
-		if (!stack->next) stack->h = MAX(sh - stack->y - 6,win_min);
+		if (!stack->next) stack->h = MAX(sh - stack->y - tilegap - 2*borderwidth,win_min);
 	}
 }
 
 void tile_ttwm(Client *stack, int count) {
-	stack->x = 4;
-	stack->y = (showbar ? barheight + 4 : 4);
-	stack->w = sw/2 - 11;
-	stack->h = sh - (showbar ? barheight + 10 : 10);
+	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
+	stack->x = tilegap;
+	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->w = w;
+	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
+	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
 	while ((stack=stack->next)) {
-		stack->x = sw/2 + 4;
-		stack->y = (showbar ? barheight + 4 : 4);
-		stack->w = sw/2 - 11;
-		stack->h = sh - (showbar ? barheight + 10 : 10);
+		stack->x = w + 2*(tilegap+borderwidth);
+		stack->y = (showbar ? barheight : 0) + tilegap;
+		stack->w = w;
+		stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
+		i++;
 	}
 }
 
