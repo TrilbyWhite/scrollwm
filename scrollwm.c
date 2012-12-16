@@ -112,7 +112,7 @@ static int mousemode;
 static Client *clients=NULL;
 static Client *focused;
 static Checkpoint *checks=NULL;
-static Bool running = True, showbar = True;
+static Bool running = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
 static int ntilemode = 0;
@@ -469,8 +469,8 @@ void maprequest(XEvent *e) {
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
 		c->w = attr.width; c->h = attr.height;
-		if (c->y < barheight+tilegap && showbar) {
-			c->y = barheight+tilegap;
+		if (c->y < (topbar ? barheight : 0) +tilegap && showbar) {
+			c->y = (topbar ? barheight : 0) + tilegap;
 			c->x = tilegap;
 		}
 		c->tags = (1<<curtag);
@@ -610,36 +610,37 @@ void tagconfig(const char *arg) {
 		tags_stik &= ~(1<<curtag);
 		tags_hide &= ~(1<<curtag);
 	}
-	else if (arg[0] == 'b') {
+	else if (arg[0] == 't')
 		showbar = !showbar;
-		if (showbar) XMoveWindow(dpy,bar,0,0);
-		else XMoveWindow(dpy,bar,0,-barheight);
-	}
+	else if (arg[0] == 'm')
+		topbar = !topbar;
 	else if (arg[0] == 'o') for (i = 0; tag_name[i]; i++) {
 		if (i != curtag) tags_hide |= (1<<i);
 		else tags_hide &= ~(1<<i);
 	}
+	if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
+	else XMoveWindow(dpy,bar,0,(topbar ? -barheight: sh));
 	draw(clients);
 }
 
 void tile_one(Client *stack) {
 	stack->x = tilegap;
-	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 }
 
 void tile_bstack(Client *stack, int count) {
 	int w = (sw - tilegap)/(count-1);
-	int h = (sh - (showbar ? barheight : 0) - tilegap)/2 - (tilegap + 2*borderwidth);
+	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
-	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
 	stack->h = h;
 	int i=0;
 	while ((stack=stack->next)) {
 		stack->x = tilegap + i*w;
-		stack->y = (showbar ? barheight : 0) + h + 2*(tilegap+borderwidth);
+		stack->y = (showbar && topbar ? barheight : 0) + h + 2*(tilegap+borderwidth);
 		stack->w = MAX(w - tilegap - 2*borderwidth,win_min);
 		stack->h = h;
 		i++;
@@ -651,7 +652,7 @@ void tile_flow(Client *stack, int count) {
 	int x = 0;
 	while (stack) {
 		stack->x = tilegap + sw*(x++);
-		stack->y = (showbar ? barheight : 0) + tilegap;
+		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = sw - 2*(tilegap + borderwidth);
 		stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 		stack = stack->next;
@@ -660,33 +661,34 @@ void tile_flow(Client *stack, int count) {
 
 void tile_rstack(Client *stack, int count) {
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
-	int h = (sh - (showbar ? barheight : 0) - tilegap)/(count-1);
+	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/(count-1);
 	stack->x = tilegap;
-	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = w;
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	while ((stack=stack->next)) {
 		stack->x = w + 2*(tilegap+borderwidth);
-		stack->y = (showbar ? barheight : 0) + tilegap + i*h;
+		stack->y = (showbar && topbar ? barheight : 0) + tilegap + i*h;
 		stack->w = w;
 		stack->h = MAX(h - tilegap - 2*borderwidth,win_min);
 		i++;
-		if (!stack->next) stack->h = MAX(sh - stack->y - tilegap - 2*borderwidth,win_min);
+		if (!stack->next)
+			stack->h = MAX(sh - (topbar ? 0: barheight) - stack->y - tilegap - 2*borderwidth,win_min);
 	}
 }
 
 void tile_ttwm(Client *stack, int count) {
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
-	stack->y = (showbar ? barheight : 0) + tilegap;
+	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = w;
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
 	while ((stack=stack->next)) {
 		stack->x = w + 2*(tilegap+borderwidth);
-		stack->y = (showbar ? barheight : 0) + tilegap;
+		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = w;
 		stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 		i++;
@@ -742,7 +744,7 @@ void window(const char *arg) {
 	else if (arg[0] == 's') zoomwindow(focused,.92,start.x_root,start.y_root);
 	else if (arg[0] == 'z') {
 		focused->x=-2; focused->w=sw;
-		focused->y=(showbar ? barheight-2 : -2);
+		focused->y=(showbar && topbar ? barheight-2 : -2);
 		focused->h=(showbar ? sh-barheight : sh+4);
 	}
 }

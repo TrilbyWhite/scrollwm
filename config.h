@@ -1,6 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 
-static const char font[] = "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
+static const char font[] =  "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 static const char *tag_name[] = {"one", "two", "three", "four", "five", NULL};
 static const char *tile_modes[] = {"ttwm", "rstack", "bstack", "flow", NULL};
 
@@ -15,11 +15,13 @@ static const char colors[LASTColor][9] = {
 	[TagList]		= "#424242",
 };
 
-static const float	zoom_min	= 0.2;
-static const float	win_min		= 30;
-static const float	zoom_up		= 1.1;
-static const float	zoom_down	= 0.9;
+static const float	zoom_min			= 0.2;
+static const float	win_min				= 30;
+static const float	zoom_up				= 1.1;
+static const float	zoom_down			= 0.9;
 static const char 	scrollwm_cursor		= XC_left_ptr;
+static Bool			showbar				= True;
+static Bool			topbar				= True;
 static const Bool	focusfollowmouse	= False;
 static const Bool	highlightfocused	= True;
 static const Bool	scrolltofocused		= True;
@@ -28,7 +30,7 @@ static const int	animatespeed		= 18;
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
 
-#define DMENU		"dmenu_run -fn \"-*-terminus-bold-r-*--12-120-72-72-c-60-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
+#define DMENU		"dmenu_run -fn \"-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
 #define TERM		"urxvt" 		/* or "urxvtc","xterm","terminator",etc */
 #define CMD(app)	app "&"
 
@@ -75,7 +77,8 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,	XK_4,		toggletag,	"4"		},
 	{ MODKEY|Mod1Mask,	XK_5,		toggletag,	"5"		},
 	/* toggle statusbar */
-	{ MODKEY,			XK_a,		tagconfig,	"bar"	},
+	{ MODKEY,			XK_a,		tagconfig,	"togglebar"		},
+	{ MODKEY,			XK_x,		tagconfig,	"movebar"		},
 };
 
 /* mouse buttons with no modifiers only work when triggered */
