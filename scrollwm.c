@@ -677,7 +677,10 @@ void tile_bstack(Client *stack, int count) {
 void tile_flow(Client *stack, int count) {
 	int x = 0;
 	while (stack) {
-		if (!intarget(stack)) continue;
+		if (!intarget(stack)) {
+			stack = stack->next;
+			continue;
+		}
 		stack->x = tilegap + sw*(x++);
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = sw - 2*(tilegap + borderwidth);
@@ -727,7 +730,6 @@ void tile_ttwm(Client *stack, int count) {
 }
 
 void tile(const char *arg) {
-/* this is a very plain tiling function, just as a placeholder for now */
 	int i = 0;
 	Client *c;
 	for (c = clients; c; c = c->next)
