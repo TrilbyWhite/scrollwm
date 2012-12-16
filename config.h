@@ -57,11 +57,14 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,		XK_b,		tile,		"bstack"		},
 	{ MODKEY|Mod1Mask,		XK_f,		tile,		"flow"			},
 	{ MODKEY|Mod1Mask,		XK_m,		monocle,	NULL			},
+	{ MODKEY,				XK_s,		target,		"screen"		},
+	{ MODKEY,				XK_t,		target,		"tag"			},
+	{ MODKEY,				XK_v,		target,		"visible"		},
 	/* window cycling */
-	{ MODKEY,				XK_Tab, 	cycle,		"screen"		},
-	{ MODKEY|ShiftMask,		XK_Tab, 	cycle,		"visible"		},
+	{ MODKEY,				XK_Tab, 	cycle,		NULL			},
+	{ MODKEY|ShiftMask,		XK_Tab, 	cycle,		"screen"		},
 	{ MODKEY|Mod1Mask,		XK_Tab, 	cycle,		"tag"			},
-	{ MODKEY|ControlMask,	XK_Tab, 	cycle,		"all"			},
+	{ MODKEY|ControlMask,	XK_Tab, 	cycle,		"visible"		},
 	/* select tag */
 	{ MODKEY,			XK_1,		tag,		"1"		},
 	{ MODKEY,			XK_2,		tag,		"2"		},

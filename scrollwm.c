@@ -78,6 +78,7 @@ static void cycle_tile(const char *);
 static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
+static Bool intarget(Client *);
 static void killclient(const char *);
 static void monocle(const char *);
 static Bool onscreen(Client *);
@@ -86,6 +87,7 @@ static void scrollwindows(Client *,int,int);
 static void spawn(const char *);
 static void tag(const char *);
 static void tagconfig(const char *);
+static void target(const char *);
 static void tile_one(Client *);
 static void tile(const char *);
 static void toggletag(const char *);
@@ -118,6 +120,7 @@ static int curtag = 0;
 static int ntilemode = 0;
 static int statuswidth = 0;
 static FILE *inpipe;
+static char targetmode = 's';
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
@@ -260,11 +263,14 @@ void checkpoint_update(int x, int y, float zoom) {
 void cycle(const char *arg) {
 	if (!focused) return;
 	Client *prev = focused;
-	if (arg[0] == 'a') {
+	char tm;
+	if (arg == NULL) tm = targetmode;
+	else tm = arg[0];
+	if (tm == 'a') {
 		focused = focused->next;
 		if (!focused) focused = clients;
 	}
-	else if (arg[0] == 'v') {
+	else if (tm == 'v') {
 		while ( (focused=focused->next) && (focused->tags & tags_hide) );
 		if (!focused) {
 			focused = clients;
@@ -272,14 +278,14 @@ void cycle(const char *arg) {
 				while ((focused=focused->next)->tags & tags_hide );
 		}
 	}
-	else if (arg[0] == 's') {
+	else if (tm == 's') {
 		while (focused && (!onscreen(focused=focused->next) || (focused->tags & tags_hide)) );
 		if (!focused) {
 			if ( !onscreen(focused=clients) || (focused->tags & tags_hide) )
 				while (focused && (!onscreen(focused=focused->next) || (focused->tags & tags_hide)) );
 		}
 	}
-	else if (arg[0] == 't') {
+	else if (tm == 't') {
 		while ( (focused=focused->next) && !(focused->tags & prev->tags) );
 		if (!focused) {
 			focused = clients;
@@ -359,7 +365,7 @@ void draw(Client *stack) {
 			XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
 		x+=w+10;
 	}
-	/* overview "icon" */
+	/* overview "icon" and target indicator*/
 	if (clients) {
 		x = MAX(x+20,sw/10);
 		XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
@@ -374,6 +380,10 @@ void draw(Client *stack) {
 		XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
 		x+=20;
 	}
+	char tmstring[4] = "|X|";
+	tmstring[1] = targetmode;
+	XDrawString(dpy,buf,gc,x,fontheight,tmstring,3);
+	x+=40;
 	/* title */
 	if (focused) {
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
@@ -433,6 +443,15 @@ void focusclient(Client *c) {
 	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
 	XRaiseWindow(dpy,c->win);
 	XRaiseWindow(dpy,bar);
+}
+
+static Bool intarget(Client *c) {
+	char tm = targetmode;
+	if (tm == 'a') return True;
+	else if (tm == 's') return onscreen(c);
+	else if (tm == 't') return (c->tags & (1<<curtag));
+	else if (tm == 'v') return (c->tags & (1<<tags_hide));
+	else return False;
 }
 
 void keypress(XEvent *e) {
@@ -623,7 +642,12 @@ void tagconfig(const char *arg) {
 	draw(clients);
 }
 
+void target(const char *arg) {
+	targetmode = arg[0];
+}
+
 void tile_one(Client *stack) {
+	while (!intarget(stack)) stack=stack->next;
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
@@ -631,6 +655,7 @@ void tile_one(Client *stack) {
 }
 
 void tile_bstack(Client *stack, int count) {
+	while (!intarget(stack)) stack=stack->next;
 	int w = (sw - tilegap)/(count-1);
 	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
@@ -639,6 +664,7 @@ void tile_bstack(Client *stack, int count) {
 	stack->h = h + tilebias;
 	int i=0;
 	while ((stack=stack->next)) {
+		if (!intarget(stack)) continue;
 		stack->x = tilegap + i*w;
 		stack->y = (showbar && topbar ? barheight : 0) + h + 2*(tilegap+borderwidth) + tilebias;
 		stack->w = MAX(w - tilegap - 2*borderwidth,win_min);
@@ -651,6 +677,7 @@ void tile_bstack(Client *stack, int count) {
 void tile_flow(Client *stack, int count) {
 	int x = 0;
 	while (stack) {
+		if (!intarget(stack)) continue;
 		stack->x = tilegap + sw*(x++);
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = sw - 2*(tilegap + borderwidth);
@@ -660,6 +687,7 @@ void tile_flow(Client *stack, int count) {
 }
 
 void tile_rstack(Client *stack, int count) {
+	while (!intarget(stack)) stack=stack->next;
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/(count-1);
 	stack->x = tilegap;
@@ -668,6 +696,7 @@ void tile_rstack(Client *stack, int count) {
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	while ((stack=stack->next)) {
+		if (!intarget(stack)) continue;
 		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap + i*h;
 		stack->w = w - tilebias;
@@ -679,6 +708,7 @@ void tile_rstack(Client *stack, int count) {
 }
 
 void tile_ttwm(Client *stack, int count) {
+	while (!intarget(stack)) stack=stack->next;
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
@@ -687,6 +717,7 @@ void tile_ttwm(Client *stack, int count) {
 	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
 	while ((stack=stack->next)) {
+		if (!intarget(stack)) continue;
 		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = w - tilebias;
@@ -697,9 +728,10 @@ void tile_ttwm(Client *stack, int count) {
 
 void tile(const char *arg) {
 /* this is a very plain tiling function, just as a placeholder for now */
-	int i;
+	int i = 0;
 	Client *c;
-	for (c = clients, i = 0; c; c = c->next, i++);
+	for (c = clients; c; c = c->next)
+		if (intarget(c)) i++;
 	if (i == 0) return;
 	else if (i == 1) { tile_one(clients); return; }
 	if (arg[0] == 't') tile_ttwm(clients,i);
