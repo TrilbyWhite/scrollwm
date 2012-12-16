@@ -42,6 +42,9 @@ static Key keys[] = {
 	{ MODKEY,				XK_w,		spawn,		CMD("luakit")	},
 	{ MODKEY|ShiftMask,		XK_q,		quit,		NULL			},
 	{ Mod1Mask,				XK_F4,		killclient,	NULL			},
+	/* checkpoints */
+	{ MODKEY,			XK_c,			checkpoint,			NULL	},
+	{ MODKEY|Mod1Mask,	XK_c,			checkpoint_set,		NULL	},
 	/* tiling bindings	*/
 	{ MODKEY,				XK_space,	cycle_tile,	NULL			},
 	{ MODKEY|Mod1Mask,		XK_t,		tile,		"ttwm"			},
@@ -72,7 +75,7 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,	XK_4,		toggletag,	"4"		},
 	{ MODKEY|Mod1Mask,	XK_5,		toggletag,	"5"		},
 	/* toggle statusbar */
-	{ MODKEY,			XK_a,		tagconfig,	"bar"},
+	{ MODKEY,			XK_a,		tagconfig,	"bar"	},
 };
 
 /* mouse buttons with no modifiers only work when triggered */

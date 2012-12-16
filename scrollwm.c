@@ -49,6 +49,14 @@ struct Client {
 	Window win;
 };
 
+typedef struct Checkpoint Checkpoint;
+struct Checkpoint {
+	int x,y;
+	float zoom;
+	char key;
+	Checkpoint *next;
+};
+
 static void buttonpress(XEvent *);
 static void buttonrelease(XEvent *);
 static void destroynotify(XEvent *);
@@ -60,7 +68,11 @@ static void motionnotify(XEvent *);
 static void propertynotify(XEvent *);
 static void unmapnotify(XEvent *);
 
-static void animate();
+static void animate(int,int);
+static void animatefocus();
+static void checkpoint(const char *);
+static void checkpoint_set(const char *);
+static void checkpoint_update(int,int,float);
 static void cycle(const char *);
 static void cycle_tile(const char *);
 static void desktop(const char *);
@@ -99,6 +111,7 @@ static XButtonEvent start;
 static int mousemode;
 static Client *clients=NULL;
 static Client *focused;
+static Checkpoint *checks=NULL;
 static Bool running = True, showbar = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
@@ -118,9 +131,11 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[UnmapNotify]		= unmapnotify,
 };
 
-void animate() {
-	if ( !animations || !focused || !scrolltofocused || onscreen(focused)) return;
-	int tx=-focused->x+tilegap, ty=-focused->y+(showbar?barheight:0)+tilegap;
+void animate(int tx,int ty) {
+	if (!animations) {
+		scrollwindows(clients,tx,ty);
+		return;
+	}
 	int dx = (tx == 0 ? 0 : (tx > 0 ? animatespeed+1 : -(animatespeed+1)));
 	int dy = (ty == 0 ? 0 : (ty > 0 ? animatespeed+1 : -(animatespeed+1)));
 	while (abs(tx) > animatespeed || abs(ty) > animatespeed) {
@@ -130,6 +145,12 @@ void animate() {
 		if (abs(ty) < animatespeed+1) dy = 0;
 	}
 	scrollwindows(clients,tx,ty);
+}
+
+void animatefocus() {
+	if ( !animations || !focused || !scrolltofocused || onscreen(focused)) return;
+	int tx=-focused->x+tilegap, ty=-focused->y+(showbar?barheight:0)+tilegap;
+	animate(tx,ty);
 }
 
 void buttonpress(XEvent *e) {
@@ -152,6 +173,88 @@ void buttonpress(XEvent *e) {
 void buttonrelease(XEvent *e) {
 	XUngrabPointer(dpy, CurrentTime);
 	mousemode = MOff;
+}
+
+static char checkpoint_helper(const char *arg) {
+	if (arg == NULL) {
+		XGrabKeyboard(dpy,root,True,GrabModeAsync,GrabModeAsync,CurrentTime);
+		XEvent e;
+		while (!XCheckTypedEvent(dpy,KeyPress,&e));
+		XKeyEvent *ev = &e.xkey;
+		char *cs = XKeysymToString(XkbKeycodeToKeysym(dpy,(KeyCode)ev->keycode,0,0));
+		XUngrabKeyboard(dpy,CurrentTime);
+		if (cs) return cs[0];
+		else return '0';
+	}
+	else {
+		return arg[0];
+	}
+}
+
+void checkpoint_init() {
+	int i;
+	Checkpoint *cp;
+	for (i = 0; i < 6; i++) {
+		cp = (Checkpoint *) calloc(1,sizeof(Checkpoint));
+		cp->zoom = 1.0;
+		cp->key =  48 + i;
+		cp->y = sh*(i-1);
+		cp->next = checks;
+		checks = cp;
+	}
+	checks->y=0; /* checkpoint 0 and 1 are initialy equivalent */
+}
+
+void checkpoint(const char *arg) {
+	char key = checkpoint_helper(arg);
+	Checkpoint *cp;
+	Client *prev = focused;
+	for (cp = checks; cp; cp = cp->next) {
+		if (cp->key == key) {
+			animate(-cp->x,-cp->y);
+			zoom(clients,1/cp->zoom,0,0);
+			focused = clients;
+			while (focused && !(onscreen(focused) || (focused->tags & tags_hide)) )
+				focused=focused->next;
+			if (focused) focusclient(focused);
+			else focused=prev;
+			draw(clients);
+			return;
+		}
+	}
+}
+
+void checkpoint_set(const char *arg) {
+	char key = checkpoint_helper(arg);
+	if (key == '0') return; /* never reset checkpoint zero */
+	Checkpoint *cp;
+	for (cp = checks; cp; cp = cp->next)
+		if (cp->key == key) {
+			cp->x = 0;
+			cp->y = 0;
+			cp->zoom = 1.0;
+			return;
+		}
+	cp = (Checkpoint *) calloc(1,sizeof(Checkpoint));
+	cp->next = checks;
+	cp->zoom = 1.0;
+	cp->key = key;
+	checks = cp;
+}
+
+void checkpoint_update(int x, int y, float zoom) {
+	Checkpoint *cp;
+	for (cp = checks; cp; cp = cp->next) {
+		if (zoom != 1) {
+			cp->zoom*=zoom;
+			cp->x = (cp->x-x)*zoom + x;
+			cp->y = (cp->y-y)*zoom + y;
+		}
+		else {
+			cp->x+=x;
+			cp->y+=y;
+		}
+	}
 }
 
 void cycle(const char *arg) {
@@ -186,7 +289,7 @@ void cycle(const char *arg) {
 	}	
 	if (!focused) focused = prev;
 	focusclient(focused);
-	animate();
+	animatefocus();
 	draw(clients);
 }
 
@@ -443,6 +546,7 @@ void scrollwindows(Client *stack, int x, int y) {
 		}
 		stack = stack->next;
 	}
+	checkpoint_update(x,y,1);
 	draw(clients);
 }
 
@@ -658,11 +762,13 @@ void zoomwindow(Client *c, float factor, int x, int y) {
 	c->y = (c->y-y) * factor + y;
 }
 
+
 void zoom(Client *stack, float factor, int x, int y) {
 	while (stack) {
 		if (!(stack->tags & tags_stik)) zoomwindow(stack,factor,x,y);
 		stack = stack->next;
 	}
+	checkpoint_update(x,y,factor);
 	draw(clients);
 }
 
@@ -708,6 +814,8 @@ int main(int argc, const char **argv) {
 			StructureNotifyMask;
 	XChangeWindowAttributes(dpy,root,CWEventMask,&wa);
 	XSelectInput(dpy,root,wa.event_mask);
+	/* checkpoint init */
+	checkpoint_init();
 	/* key and mouse binding */
 	unsigned int mods[] = {0, LockMask, Mod2Mask, LockMask|Mod2Mask};
 	KeyCode code;
@@ -744,6 +852,12 @@ int main(int argc, const char **argv) {
 		}
 	}
 	/* clean up */
+	Checkpoint *cp = checks;
+	while (checks) {
+		cp = checks;
+		checks = checks->next;
+		free(cp);
+	}
 	free(line);
 	XFreeFontInfo(NULL,fontstruct,1);
 	XUnloadFont(dpy,val.font);
