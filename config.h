@@ -29,6 +29,7 @@ static const Bool	animations			= True;
 static const int	animatespeed		= 18;
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
+static int			tilebias			= 0;
 
 #define DMENU		"dmenu_run -fn \"-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*\" -nb \"#101010\" -nf \"#484862\" -sb \"#080808\" -sf \"#FFDD0E\""
 #define TERM		"urxvt" 		/* or "urxvtc","xterm","terminator",etc */
@@ -49,6 +50,8 @@ static Key keys[] = {
 	{ MODKEY|Mod1Mask,	XK_c,			checkpoint_set,		NULL	},
 	/* tiling bindings	*/
 	{ MODKEY,				XK_space,	cycle_tile,	NULL			},
+	{ MODKEY,				XK_i,		tile,		"increase"		},
+	{ MODKEY,				XK_d,		tile,		"decrease"		},
 	{ MODKEY|Mod1Mask,		XK_t,		tile,		"ttwm"			},
 	{ MODKEY|Mod1Mask,		XK_r,		tile,		"rstack"		},
 	{ MODKEY|Mod1Mask,		XK_b,		tile,		"bstack"		},

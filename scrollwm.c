@@ -636,13 +636,13 @@ void tile_bstack(Client *stack, int count) {
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
-	stack->h = h;
+	stack->h = h + tilebias;
 	int i=0;
 	while ((stack=stack->next)) {
 		stack->x = tilegap + i*w;
-		stack->y = (showbar && topbar ? barheight : 0) + h + 2*(tilegap+borderwidth);
+		stack->y = (showbar && topbar ? barheight : 0) + h + 2*(tilegap+borderwidth) + tilebias;
 		stack->w = MAX(w - tilegap - 2*borderwidth,win_min);
-		stack->h = h;
+		stack->h = h - tilebias;
 		i++;
 		if (!stack->next) stack->w = MAX(sw - stack->x - tilegap - 2*borderwidth,win_min);
 	}
@@ -664,13 +664,13 @@ void tile_rstack(Client *stack, int count) {
 	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/(count-1);
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
-	stack->w = w;
+	stack->w = w + tilebias;
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	while ((stack=stack->next)) {
-		stack->x = w + 2*(tilegap+borderwidth);
+		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap + i*h;
-		stack->w = w;
+		stack->w = w - tilebias;
 		stack->h = MAX(h - tilegap - 2*borderwidth,win_min);
 		i++;
 		if (!stack->next)
@@ -682,14 +682,14 @@ void tile_ttwm(Client *stack, int count) {
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
-	stack->w = w;
+	stack->w = w + tilebias;
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
 	while ((stack=stack->next)) {
-		stack->x = w + 2*(tilegap+borderwidth);
+		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
-		stack->w = w;
+		stack->w = w - tilebias;
 		stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 		i++;
 	}
@@ -706,6 +706,8 @@ void tile(const char *arg) {
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
 	else if (arg[0] == 'f') tile_flow(clients,i);
+	else if (arg[0] == 'i') tilebias += 2;
+	else if (arg[0] == 'd') tilebias -= 2;
 	draw(clients);
 }
 
