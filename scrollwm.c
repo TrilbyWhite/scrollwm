@@ -837,7 +837,7 @@ int main(int argc, const char **argv) {
 	barheight = fontstruct->ascent+fontstruct->descent+2;
 	gc = XCreateGC(dpy,root,GCFont,&val);
 	/* buffers and windows */
-	bar = XCreateSimpleWindow(dpy,root,0,0,sw,barheight,0,0,0);
+	bar = XCreateSimpleWindow(dpy,root,0,(topbar ? 0 : sh),sw,barheight,0,0,0);
 	buf = XCreatePixmap(dpy,root,sw,barheight,DefaultDepth(dpy,scr));
 	sbar = XCreatePixmap(dpy,root,sw/2,barheight,DefaultDepth(dpy,scr));
 	XSetWindowAttributes wa;
