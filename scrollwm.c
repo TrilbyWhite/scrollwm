@@ -81,6 +81,7 @@ static void focusclient(Client *);
 static Bool intarget(Client *);
 static void killclient(const char *);
 static void monocle(const char *);
+static void move(const char *);
 static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
@@ -507,6 +508,17 @@ void maprequest(XEvent *e) {
 void monocle(const char *arg) {
 	if (focused) tile_one(focused);
 	draw(clients);
+}
+
+void move(const char *arg) {
+	if (arg[0] == 'L') animate(sw,0);
+	else if (arg[0] == 'R') animate(-sw,0);
+	else if (arg[0] == 'U') animate(0,sh);
+	else if (arg[0] == 'D') animate(0,-sh);
+	else if (arg[0] == 'l') animate(25,0);
+	else if (arg[0] == 'r') animate(-25,0);
+	else if (arg[0] == 'u') animate(0,25);
+	else if (arg[0] == 'd') animate(0,-25);
 }
 
 void motionnotify(XEvent *e) {

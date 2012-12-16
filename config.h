@@ -46,8 +46,8 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_q,		quit,		NULL			},
 	{ Mod1Mask,				XK_F4,		killclient,	NULL			},
 	/* checkpoints */
-	{ MODKEY,			XK_c,			checkpoint,			NULL	},
-	{ MODKEY|Mod1Mask,	XK_c,			checkpoint_set,		NULL	},
+	{ MODKEY,				XK_c,		checkpoint,			NULL	},
+	{ MODKEY|Mod1Mask,		XK_c,		checkpoint_set,		NULL	},
 	/* tiling bindings	*/
 	{ MODKEY,				XK_space,	cycle_tile,	NULL			},
 	{ MODKEY,				XK_i,		tile,		"increase"		},
@@ -60,31 +60,40 @@ static Key keys[] = {
 	{ MODKEY,				XK_s,		target,		"screen"		},
 	{ MODKEY,				XK_t,		target,		"tag"			},
 	{ MODKEY,				XK_v,		target,		"visible"		},
+	/* desktop movement */
+	{ MODKEY,				XK_Down,	move,		"DOWN"			},
+	{ MODKEY,				XK_Up,		move,		"UP"			},
+	{ MODKEY,				XK_Left,	move,		"LEFT"			},
+	{ MODKEY,				XK_Right,	move,		"RIGHT"			},
+	{ MODKEY,				XK_j,		move,		"down"			},
+	{ MODKEY,				XK_k,		move,		"up"			},
+	{ MODKEY,				XK_h,		move,		"left"			},
+	{ MODKEY,				XK_l,		move,		"right"			},
 	/* window cycling */
 	{ MODKEY,				XK_Tab, 	cycle,		NULL			},
 	{ MODKEY|ShiftMask,		XK_Tab, 	cycle,		"screen"		},
 	{ MODKEY|Mod1Mask,		XK_Tab, 	cycle,		"tag"			},
 	{ MODKEY|ControlMask,	XK_Tab, 	cycle,		"visible"		},
 	/* select tag */
-	{ MODKEY,			XK_1,		tag,		"1"		},
-	{ MODKEY,			XK_2,		tag,		"2"		},
-	{ MODKEY,			XK_3,		tag,		"3"		},
-	{ MODKEY,			XK_4,		tag,		"4"		},
-	{ MODKEY,			XK_5,		tag,		"5"		},
+	{ MODKEY,				XK_1,		tag,		"1"		},
+	{ MODKEY,				XK_2,		tag,		"2"		},
+	{ MODKEY,				XK_3,		tag,		"3"		},
+	{ MODKEY,				XK_4,		tag,		"4"		},
+	{ MODKEY,				XK_5,		tag,		"5"		},
 	/* tag operations: hide-others, hidden,  sticky, normal(unstick+unhide) */
-	{ MODKEY,			XK_o,		tagconfig,	"others"},
-	{ MODKEY,			XK_h,		tagconfig,	"hide"	},
-	{ MODKEY,			XK_s,		tagconfig,	"stick"	},
-	{ MODKEY,			XK_n,		tagconfig,	"normal"},
+	{ MODKEY|Mod1Mask,		XK_o,		tagconfig,	"others"},
+	{ MODKEY|Mod1Mask,		XK_h,		tagconfig,	"hide"	},
+	{ MODKEY|Mod1Mask,		XK_s,		tagconfig,	"stick"	},
+	{ MODKEY|Mod1Mask,		XK_n,		tagconfig,	"normal"},
 	/* assign/remove a window to/from a tag */
-	{ MODKEY|Mod1Mask,	XK_1,		toggletag,	"1"		},
-	{ MODKEY|Mod1Mask,	XK_2,		toggletag,	"2"		},
-	{ MODKEY|Mod1Mask,	XK_3,		toggletag,	"3"		},
-	{ MODKEY|Mod1Mask,	XK_4,		toggletag,	"4"		},
-	{ MODKEY|Mod1Mask,	XK_5,		toggletag,	"5"		},
+	{ MODKEY|Mod1Mask,		XK_1,		toggletag,	"1"		},
+	{ MODKEY|Mod1Mask,		XK_2,		toggletag,	"2"		},
+	{ MODKEY|Mod1Mask,		XK_3,		toggletag,	"3"		},
+	{ MODKEY|Mod1Mask,		XK_4,		toggletag,	"4"		},
+	{ MODKEY|Mod1Mask,		XK_5,		toggletag,	"5"		},
 	/* toggle statusbar */
-	{ MODKEY,			XK_a,		tagconfig,	"togglebar"		},
-	{ MODKEY,			XK_x,		tagconfig,	"movebar"		},
+	{ MODKEY,				XK_a,		tagconfig,	"togglebar"		},
+	{ MODKEY,				XK_x,		tagconfig,	"movebar"		},
 };
 
 /* mouse buttons with no modifiers only work when triggered */
