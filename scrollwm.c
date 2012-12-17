@@ -22,7 +22,7 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-enum {Background, Default, Hidden, Normal, Sticky, Urgent, Title, TagList, LASTColor };
+enum {Background, Default, Target, Hidden, Normal, Sticky, Urgent, Title, TagList, LASTColor };
 enum {MOff, MWMove, MWResize, MDMove, MDResize };
 
 typedef struct {
@@ -379,12 +379,13 @@ void draw(Client *stack) {
 		XSetForeground(dpy,gc,color.pixel);
 		for (i = 0; i < 3; i++) for (w = 0; w < 3; w++) if (loc[i*3+w])
 		XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
-		x+=20;
+		x+=18;
 	}
-	char tmstring[4] = "|X|";
-	tmstring[1] = targetmode;
-	XDrawString(dpy,buf,gc,x,fontheight,tmstring,3);
-	x+=40;
+	XAllocNamedColor(dpy,cmap,colors[Target],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	if (targetmode == 't') XDrawString(dpy,buf,gc,x,fontheight,"[tag]",5);
+	else if (targetmode == 'v') XDrawString(dpy,buf,gc,x,fontheight,"[vis]",5);
+	if (targetmode != 's') x += XTextWidth(fontstruct,"[all]",4) + 18;
 	/* title */
 	if (focused) {
 		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
@@ -656,6 +657,7 @@ void tagconfig(const char *arg) {
 
 void target(const char *arg) {
 	targetmode = arg[0];
+	draw(clients);
 }
 
 void tile_one(Client *stack) {

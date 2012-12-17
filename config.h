@@ -7,6 +7,7 @@ static const char *tile_modes[] = {"ttwm", "rstack", "bstack", "flow", NULL};
 static const char colors[LASTColor][9] = {
 	[Background]	= "#101010",
 	[Default]		= "#686868",
+	[Target]		= "#68E080",
 	[Hidden]		= "#FFAA48",
 	[Normal]		= "#68B0E0",
 	[Sticky]		= "#288428",
