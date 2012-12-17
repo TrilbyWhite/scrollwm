@@ -793,9 +793,9 @@ void window(const char *arg) {
 	else if (arg[0] == 'g') zoomwindow(focused,1.1,start.x_root,start.y_root);
 	else if (arg[0] == 's') zoomwindow(focused,.92,start.x_root,start.y_root);
 	else if (arg[0] == 'z') {
-		focused->x=-2; focused->w=sw;
-		focused->y=(showbar && topbar ? barheight-2 : -2);
-		focused->h=(showbar ? sh-barheight : sh+4);
+		focused->x=-borderwidth; focused->w=sw;
+		focused->y=(showbar && topbar ? barheight : 0)-borderwidth;
+		focused->h=(showbar ? sh-barheight : sh) + borderwidth;
 	}
 }
 
