@@ -78,6 +78,7 @@ static void cycle_tile(const char *);
 static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
+static void fullscreen(const char *);
 static Bool intarget(Client *);
 static void killclient(const char *);
 static void monocle(const char *);
@@ -447,6 +448,26 @@ void focusclient(Client *c) {
 	XRaiseWindow(dpy,bar);
 }
 
+static Bool fullscreenstate = False;
+static void fullscreen(const char *arg) {
+	if (!focused) return;
+	static int wx,wy,ww,wh;
+	if (showbar) XMoveWindow(dpy,bar,0,(topbar ? -barheight: sh));
+	fullscreenstate = !fullscreenstate;
+	if (fullscreenstate) {
+		wx=focused->x; wy=focused->y;
+		ww=focused->w; wh=focused->h;
+		focused->x = -borderwidth; focused->y = -borderwidth;
+		focused->w = sw; focused->h = sh;
+	}
+	else {
+		if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
+		focused->x = wx; focused->y = wy;
+		focused->w = ww; focused->h = wh;
+	}
+	draw(clients);
+}
+
 static Bool intarget(Client *c) {
 	char tm = targetmode;
 	if (tm == 'a') return True;
@@ -754,8 +775,14 @@ void tile(const char *arg) {
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
 	else if (arg[0] == 'f') tile_flow(clients,i);
-	else if (arg[0] == 'i') tilebias += 2;
-	else if (arg[0] == 'd') tilebias -= 2;
+	else if (arg[0] == 'i') {
+		tilebias += 2;
+		tile(tile_modes[ntilemode]);
+	}
+	else if (arg[0] == 'd') {
+		tilebias -= 2;
+		tile(tile_modes[ntilemode]);
+	}
 	draw(clients);
 }
 
