@@ -42,6 +42,7 @@ static int			tilebias			= 0;
 static Key keys[] = {
 	/* modifier				key			function	argument */
 	/* launchers + misc: */
+	{ MOD1,				XK_e,		switcher,	NULL			},
 	{ MOD1,				XK_Return,	spawn,		CMD(TERM)		},
 	{ MOD1,				XK_p,		spawn,		CMD(DMENU)		},
 	{ MOD1,				XK_w,		spawn,		CMD("luakit")	},

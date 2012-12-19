@@ -86,6 +86,8 @@ static void move(const char *);
 static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
+static GC setcolor(int);
+static void switcher(const char *);
 static void spawn(const char *);
 static void tag(const char *);
 static void tagconfig(const char *);
@@ -113,6 +115,7 @@ static int fontheight, barheight;
 static XWindowAttributes attr;
 static XButtonEvent start;
 static int mousemode;
+static XColor color;
 static Client *clients=NULL;
 static Client *focused;
 static Checkpoint *checks=NULL;
@@ -323,7 +326,6 @@ void draw(Client *stack) {
 	if (focused) tags_urg &= ~focused->tags;
 	tags_urg &= ~(1<<curtag);
 	/* WINDOWS */
-	XColor color;
 	int tags_occ = 0;
 	int loc[9] = {0,0,0,0,0,0,0,0,0}, cx,cy;
 	XSetWindowAttributes wa;
@@ -339,17 +341,14 @@ void draw(Client *stack) {
 		}
 		XMoveResizeWindow(dpy,stack->win,stack->x,stack->y,
 			MAX(stack->w,win_min),MAX(stack->h,win_min));
-		XAllocNamedColor(dpy,cmap,
-			colors[	(highlightfocused && stack == focused ? Hidden : 
-					(stack->tags & tags_stik ? Sticky : Normal))],&color,&color);
+		setcolor( (highlightfocused && stack == focused ? Hidden :
+			(stack->tags & tags_stik ? Sticky : Normal)) );
 		wa.border_pixel = color.pixel;
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
 	}
 	/* STATUS BAR */
-	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
-	XFillRectangle(dpy,buf,gc,0,0,sw,barheight);
+	XFillRectangle(dpy,buf,setcolor(Background),0,0,sw,barheight);
 	/* tags */
 	int i, x=10,w=0;
 	int col;
@@ -359,9 +358,7 @@ void draw(Client *stack) {
 				(tags_hide & (1<<i) ? Hidden :
 				(tags_stik & (1<<i) ? Sticky : 
 				(tags_occ  & (1<<i) ? Normal : Default ))));
-		XAllocNamedColor(dpy,cmap,colors[col],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
-		XDrawString(dpy,buf,gc,x,fontheight,tag_name[i],strlen(tag_name[i]));
+		XDrawString(dpy,buf,setcolor(col),x,fontheight,tag_name[i],strlen(tag_name[i]));
 		w = XTextWidth(fontstruct,tag_name[i],strlen(tag_name[i]));
 		if (curtag == i)
 			XFillRectangle(dpy,buf,gc,x-2,fontheight+1,w+4,barheight-fontheight);
@@ -370,27 +367,22 @@ void draw(Client *stack) {
 	/* overview "icon" and target indicator*/
 	if (clients) {
 		x = MAX(x+20,sw/10);
-		XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
-		XDrawRectangle(dpy,buf,gc,x,fontheight-9,6,6);
+		XDrawRectangle(dpy,buf,setcolor(Default),x,fontheight-9,6,6);
 		XDrawRectangle(dpy,buf,gc,x,fontheight-6,6,6);
 		XDrawRectangle(dpy,buf,gc,x+3,fontheight-9,6,6);
 		XDrawRectangle(dpy,buf,gc,x+3,fontheight-6,6,6);
-		XAllocNamedColor(dpy,cmap,colors[Hidden],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
+		setcolor(Hidden);
 		for (i = 0; i < 3; i++) for (w = 0; w < 3; w++) if (loc[i*3+w])
-		XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
+			XFillRectangle(dpy,buf,gc,x+3*i,fontheight-9+3*w,4,4);
 		x+=18;
 	}
-	XAllocNamedColor(dpy,cmap,colors[Target],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
+	setcolor(Target);
 	if (targetmode == 't') XDrawString(dpy,buf,gc,x,fontheight,"[tag]",5);
 	else if (targetmode == 'v') XDrawString(dpy,buf,gc,x,fontheight,"[vis]",5);
 	if (targetmode != 's') x += XTextWidth(fontstruct,"[all]",4) + 18;
 	/* title */
 	if (focused) {
-		XAllocNamedColor(dpy,cmap,colors[Title],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
+		setcolor(Title);
 		if (focused->title) {
 			XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
 			x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
@@ -399,9 +391,7 @@ void draw(Client *stack) {
 			XDrawString(dpy,buf,gc,x,fontheight,"UNNAMED",7);
 			x += XTextWidth(fontstruct,"UNNAMED",7) + 10;
 		}
-		XAllocNamedColor(dpy,cmap,colors[TagList],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
-		XDrawString(dpy,buf,gc,x,fontheight,"[",1);
+		XDrawString(dpy,buf,setcolor(TagList),x,fontheight,"[",1);
 		x += XTextWidth(fontstruct,"[",1);
 		/* tag list */
 		for (i = 0; tag_name[i]; i++) if (focused->tags & (1<<i)) {
@@ -412,12 +402,8 @@ void draw(Client *stack) {
 			x += w;
 		}
 		x -= w;
-		XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
-		XFillRectangle(dpy,buf,gc,x,0,10,barheight);
-		XAllocNamedColor(dpy,cmap,colors[TagList],&color,&color);
-		XSetForeground(dpy,gc,color.pixel);
-		XDrawString(dpy,buf,gc,x,fontheight,"]",1);
+		XFillRectangle(dpy,buf,setcolor(Background),x,0,10,barheight);
+		XDrawString(dpy,buf,setcolor(TagList),x,fontheight,"]",1);
 	}
 	/* USER STATUS INFO */
 	if (statuswidth)
@@ -473,7 +459,7 @@ static Bool intarget(Client *c) {
 	if (tm == 'a') return True;
 	else if (tm == 's') return onscreen(c);
 	else if (tm == 't') return (c->tags & (1<<curtag));
-	else if (tm == 'v') return (c->tags & (1<<tags_hide));
+	else if (tm == 'v') return (c->tags & ~tags_hide);
 	else return False;
 }
 
@@ -591,6 +577,12 @@ void quit(const char *arg) {
 	running = False;
 }
 
+GC setcolor(int col) {
+	XAllocNamedColor(dpy,cmap,colors[col],&color,&color);
+	XSetForeground(dpy,gc,color.pixel);
+	return gc;
+}
+
 void scrollwindows(Client *stack, int x, int y) {
 	while (stack) {
 		if (!(stack->tags & tags_stik)) {
@@ -613,11 +605,8 @@ void status(char *msg) {
 	int l;
 	XColor color;
 	statuswidth = 0;
-	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
-	XFillRectangle(dpy,sbar,gc,0,0,sw/2,barheight);
-	XAllocNamedColor(dpy,cmap,colors[Default],&color,&color);
-	XSetForeground(dpy,gc,color.pixel);
+	XFillRectangle(dpy,sbar,setcolor(Background),0,0,sw/2,barheight);
+	setcolor(Default);
 	while(*c != '\n') {
 		if (*c == '{') {
 			if (*(++c) == '#') {
@@ -639,6 +628,66 @@ void status(char *msg) {
 	}
 	free(col);
 	draw(clients);
+}
+
+void switcher(const char *arg) {
+	Client *stack = clients;
+	int n = 0, sel = 0;
+	KeySym ks;
+	XEvent e;
+	XKeyEvent *ev;
+	Client *selclient = NULL;
+	while (stack) {
+		if (intarget(stack)) n++;
+		stack = stack->next;
+	}
+	if (n == 0) return;
+	XMoveResizeWindow(dpy,bar,0,0,sw,(n+3)*barheight);
+	XFillRectangle(dpy,bar,setcolor(Background),0,barheight,sw,(n+2)*barheight);
+	XDrawLine(dpy,bar,setcolor(Title),10,barheight+2,sw-20,barheight+2);
+	XFillRectangle(dpy,bar,gc,0,(n+3)*barheight-2,sw,2);
+	XGrabKeyboard(dpy,root,True,GrabModeAsync,GrabModeAsync,CurrentTime);
+	while (True) {
+		XFillRectangle(dpy,bar,setcolor(Background),0,barheight+4,
+			sw,(n+2)*barheight-8);
+		n=0;
+		stack = clients;
+		while (stack) {
+			if (intarget(stack)) {
+				if (sel == n) {
+					setcolor(Target);
+					selclient = stack;
+				}
+				else {
+					setcolor(Default);
+				}
+				XDrawString(dpy,bar,gc,10,(n+3)*barheight,
+					stack->title,strlen(stack->title));
+				n++;
+			}
+			stack = stack->next;
+		}
+		draw(clients);
+		XFlush(dpy);
+		while (!XCheckTypedEvent(dpy,KeyPress, &e));
+		ev = &e.xkey;
+		ks = XkbKeycodeToKeysym(dpy,(KeyCode)ev->keycode,0,0);
+		if (ks == XK_q) break;
+		else if (ks == XK_Return) {
+			if (selclient) {
+				focusclient(selclient);
+				animatefocus();
+			}
+			break;
+		}
+		else if (ks == XK_Down || ks == XK_j) sel++;
+		else if (ks == XK_Up || ks == XK_k) sel--;
+		else continue;
+		if (sel < 0) sel = 0;
+		else if (sel >= n) sel = n-1;
+	}
+	XUngrabKeyboard(dpy,CurrentTime);
+	XMoveResizeWindow(dpy,bar,0,0,sw,barheight);
 }
 
 void tag(const char *arg) {
@@ -944,4 +993,5 @@ int main(int argc, const char **argv) {
 }
 
 // vim: ts=4
+
 
