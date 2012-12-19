@@ -42,13 +42,13 @@ static int			tilebias			= 0;
 static Key keys[] = {
 	/* modifier				key			function	argument */
 	/* launchers + misc: */
-	{ MOD1,				XK_e,		switcher,	NULL			},
 	{ MOD1,				XK_Return,	spawn,		CMD(TERM)		},
 	{ MOD1,				XK_p,		spawn,		CMD(DMENU)		},
 	{ MOD1,				XK_w,		spawn,		CMD("luakit")	},
 	{ MOD1|ShiftMask,	XK_q,		quit,		NULL			},
 	{ MOD2,				XK_F4,		killclient,	NULL			},
 	{ MOD1,				XK_f,		fullscreen,	NULL			},
+	{ MOD2,				XK_Tab,		switcher,	NULL			},
 	/* checkpoints */
 	{ MOD1,				XK_c,		checkpoint,			NULL	},
 	{ MOD1|MOD2,		XK_c,		checkpoint_set,		NULL	},
