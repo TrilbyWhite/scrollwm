@@ -59,6 +59,7 @@ struct Checkpoint {
 
 static void buttonpress(XEvent *);
 static void buttonrelease(XEvent *);
+static void configurerequest(XEvent *);
 static void destroynotify(XEvent *);
 static void enternotify(XEvent *);
 static void expose(XEvent *);
@@ -129,6 +130,7 @@ static char targetmode = 's';
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
+	[ConfigureRequest]	= configurerequest,
 	[DestroyNotify]		= destroynotify,
 	[EnterNotify]		= enternotify,
 	[Expose]			= expose,
@@ -263,6 +265,18 @@ void checkpoint_update(int x, int y, float zoom) {
 			cp->y+=y;
 		}
 	}
+}
+
+void configurerequest(XEvent *e) {
+	XWindowChanges wc;
+	XConfigureRequestEvent *ev = &e->xconfigurerequest;
+	wc.x = ev->x; wc.y = ev->y;
+	wc.width = ev->width; wc.height = ev->height;
+	wc.border_width = borderwidth;
+	wc.sibling = ev->above;
+	wc.stack_mode = e->xconfigurerequest.detail;
+	XConfigureWindow(dpy, ev->window, ev->value_mask, &wc);
+	XFlush(dpy);
 }
 
 void cycle(const char *arg) {
