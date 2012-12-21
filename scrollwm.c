@@ -127,6 +127,7 @@ static int ntilemode = 0;
 static int statuswidth = 0;
 static FILE *inpipe;
 static char targetmode = 's';
+static Bool fullscreenstate = False;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
@@ -455,7 +456,6 @@ void focusclient(Client *c) {
 	XRaiseWindow(dpy,bar);
 }
 
-static Bool fullscreenstate = False;
 static void fullscreen(const char *arg) {
 	if (!focused) return;
 	static int wx,wy,ww,wh;
@@ -868,6 +868,9 @@ void toggletag(const char *arg) {
 
 void unmanage(Client *c) {
 	Client *t;
+	if ( fullscreenstate && (c->x==-borderwidth) && (c->y==-borderwidth) &&
+			(c->w==sw) && (c->h==sh) )
+		fullscreen(NULL);
 	if (c == focused) focusclient(c->next);
 	if (c == clients) clients = c->next;
 	else {
