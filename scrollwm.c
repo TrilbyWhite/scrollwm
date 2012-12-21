@@ -270,6 +270,13 @@ void checkpoint_update(int x, int y, float zoom) {
 void configurerequest(XEvent *e) {
 	XWindowChanges wc;
 	XConfigureRequestEvent *ev = &e->xconfigurerequest;
+	Client *c;
+	if ( (c=wintoclient(ev->window)) && (ev->x==0) && (ev->y==0) &&
+			(ev->width==sw) && (ev->height==sh) ) {
+		focusclient(c);
+		fullscreen(NULL);
+		return;
+	}
 	wc.x = ev->x; wc.y = ev->y;
 	wc.width = ev->width; wc.height = ev->height;
 	wc.border_width = borderwidth;
@@ -502,6 +509,7 @@ void killclient(const char *arg) {
 void maprequest(XEvent *e) {
 	Client *c;
 	static XWindowAttributes wa;
+	Bool fsme = False;
 	XMapRequestEvent *ev = &e->xmaprequest;
 	if (!XGetWindowAttributes(dpy, ev->window, &wa)) return;
 	if (wa.override_redirect) return;
@@ -511,6 +519,7 @@ void maprequest(XEvent *e) {
 		XGetWindowAttributes(dpy,c->win, &attr);
 		c->x = attr.x; c->y = attr.y;
 		c->w = attr.width; c->h = attr.height;
+		if ( (c->x==0) && (c->y==0) && (c->w==sw) && (c->h==sh) ) fsme = True;
 		if (c->y < (topbar ? barheight : 0) +tilegap && showbar) {
 			c->y = (topbar ? barheight : 0) + tilegap;
 			c->x = tilegap;
@@ -524,6 +533,7 @@ void maprequest(XEvent *e) {
 		XMapWindow(dpy,c->win);
 		focusclient(c);
 	}
+	if (fsme) fullscreen(NULL);
 	draw(clients);
 }
 

@@ -7,7 +7,7 @@
 * Displays and colors icons for the following:
 * CPU, MEM, VOLUME, BATTERY, and a CLOCK
 * 
-* Requires terminusmod,icons font to be used as is
+* Requires terminusmod,icons font to be used as is.
 * Also requires a file at ~/.audio_volume that contains
 * a number from 0-100 as a percent of max volume, or a
 * -1 for muted speakers.
