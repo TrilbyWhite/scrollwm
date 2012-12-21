@@ -833,7 +833,7 @@ void tile(const char *arg) {
 	for (c = clients; c; c = c->next)
 		if (intarget(c)) i++;
 	if (i == 0) return;
-	else if (i == 1) { tile_one(clients); return; }
+	else if (i == 1) { tile_one(clients); draw(clients); return; }
 	if (arg[0] == 't') tile_ttwm(clients,i);
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
