@@ -27,6 +27,7 @@ static const Bool	focusfollowmouse	= False;
 static const Bool	highlightfocused	= True;
 static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
+static const Bool	activeedges			= True;
 static const int	animatespeed		= 18;
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
@@ -104,9 +105,9 @@ static Key keys[] = {
 /* with the	mouse pointer over the desktop					*/
 static Button buttons[] = {
 	/* modifier			button		function 	arg */
-	{0,					1,			window,		"move"		},
+//	{0,					1,			window,		"move"		},
 	{0,					2,			cycle_tile,	NULL		},
-	{0,					3,			window,		"resize"	},
+//	{0,					3,			window,		"resize"	},
 	{0,					4,			monocle,	NULL		},
 //	{0,					5,			UNASSIGNED,	NULL		},
 	{MOD1,				1,			window,		"move"		},

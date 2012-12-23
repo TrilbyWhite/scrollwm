@@ -1,0 +1,51 @@
+
+Window management
+	Moving + resizing
+	Zooming window
+	Fullscreen
+
+Single large workspace
+
+Moving around workspace
+	Mod arrows and mod home row
+	Mouse bindings for movement
+	Zooming workspace
+
+Checkpoints
+	Default checkpoints
+	Setting checkpoints
+		checkpoint zero exception
+	Returning to checkpoints
+
+Tags
+	Current tag
+	Send focused win to tag
+	Hide/Sticky/Normal current tag
+
+target modes
+	for window cycling, tiling, and switcher display
+	modes:
+		screen (default)
+		tag
+		visable
+		all - not fully implemented, may be removed
+	note: "flow" tiling mode will put windows off screen
+
+Window cycling
+
+Window switcher (Alt Tab)
+
+Tiling (manual only - no dynamic retiling)
+
+Status bar
+	Tags
+		Colors
+		Active is underlined
+	Overview icon
+	Title
+	Tag memberships
+	User status
+
+
+
+

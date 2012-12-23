@@ -40,7 +40,7 @@ static const long int Red		= 0x990000;
 /* variables */
 static long		j1,j2,j3,j4,ln1,ln2,ln3,ln4;
 static int		n, loops = 100;
-static char		c, clk[8], *aud_file;
+static char		c, clk[8], *aud_file, *mail_file;
 static FILE		*in;
 static time_t	current;
 
@@ -53,8 +53,14 @@ int main(int argc, const char **argv) {
 		aud_file = (char *) calloc(strlen(homedir)+15,sizeof(char));
 		strcpy(aud_file,homedir);
 		strcat(aud_file,"/.audio_volume");
+		mail_file = (char *) calloc(strlen(homedir)+10,sizeof(char));
+		strcpy(mail_file,homedir);
+		strcat(mail_file,"/.newmail");
 	}
-	else aud_file = NULL;
+	else {
+		aud_file = NULL;
+		mail_file = NULL;
+	}
 	/* main loop */
 	for (;;) {
 		loops ++;
@@ -97,6 +103,13 @@ int main(int argc, const char **argv) {
 			else if (n > 95) printf("{#%06X}%c  ",Green,240);
 			else printf("{#%06X}%c  ",Grey,240);
 		}
+		if ( (in=fopen(mail_file,"r")) ) {       /* MAIL NOTIFICATION */
+			fscanf(in,"%d",&n);
+			fclose(in);
+			if (n == 1) printf("{#%06X}%c  ",Blue,202);
+			else if (n == 2) printf("{#%06X}%c  ",Green,202);
+			else printf("{#%06X}%c  ",Grey,203);
+		}
 		if (loops++ > 90) {
 			time(&current);
 			strftime(clk,6,"%H:%M",localtime(&current));
@@ -106,5 +119,7 @@ int main(int argc, const char **argv) {
 		fflush(stdout);
 		usleep(500000);
 	}
+	if (aud_file) free(aud_file);
+	if (mail_file) free(mail_file);
 	return 0;
 }
