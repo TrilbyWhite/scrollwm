@@ -692,7 +692,7 @@ void switcher(const char *arg) {
 		stack = stack->next;
 	}
 	if (n == 0) return;
-	XMoveResizeWindow(dpy,bar,0,0,sw,(n+3)*barheight);
+	XMoveResizeWindow(dpy,bar,0,(topbar ? 0 : sh-(n+3)*barheight),sw,(n+3)*barheight);
 	XFillRectangle(dpy,bar,setcolor(Background),0,barheight,sw,(n+2)*barheight);
 	XDrawLine(dpy,bar,setcolor(Title),10,barheight+2,sw-20,barheight+2);
 	XFillRectangle(dpy,bar,gc,0,(n+3)*barheight-2,sw,2);
@@ -737,7 +737,7 @@ void switcher(const char *arg) {
 		else if (sel >= n) sel = n-1;
 	}
 	XUngrabKeyboard(dpy,CurrentTime);
-	XMoveResizeWindow(dpy,bar,0,0,sw,barheight);
+	XMoveResizeWindow(dpy,bar,0,(showbar?(topbar?0:sh-barheight):-barheight),sw,barheight);
 }
 
 void tag(const char *arg) {
