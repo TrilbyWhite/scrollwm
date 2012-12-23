@@ -118,7 +118,8 @@ static XButtonEvent start;
 static int mousemode;
 static XColor color;
 static Client *clients=NULL;
-static Client *focused;
+static Client *focused=NULL;
+static Bool holdfocused=False;
 static Checkpoint *checks=NULL;
 static Bool running = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
@@ -559,30 +560,25 @@ void motionnotify(XEvent *e) {
 	xdiff = e->xbutton.x_root - start.x_root;
 	ydiff = e->xbutton.y_root - start.y_root;
 if (activeedges) {
+if (mousemode == MWMove) holdfocused=True; 
 if (e->xbutton.x_root > sw-2) {
-	if (mousemode == MWMove) focused->x+=sw;
 	move("Right");
 	XWarpPointer(dpy,None,root,0,0,0,0,e->xbutton.x_root-4,e->xbutton.y_root);
-	XFlush(dpy);
 }
 else if (e->xbutton.x_root < 1) {
-	if (mousemode == MWMove) focused->x-=sw;
 	move("Left");
 	XWarpPointer(dpy,None,root,0,0,0,0,4,e->xbutton.y_root);
-	XFlush(dpy);
 }
 if (e->xbutton.y_root > sh-2) {
-	if (mousemode == MWMove) focused->y+=sh;
 	move("Down");
 	XWarpPointer(dpy,None,root,0,0,0,0,e->xbutton.x_root,e->xbutton.y_root-4);
-	XFlush(dpy);
 }
 else if (e->xbutton.y_root < 1) {
-	if (mousemode == MWMove) focused->y-=sh;
 	move("Up");
 	XWarpPointer(dpy,None,root,0,0,0,0,e->xbutton.x_root,4);
-	XFlush(dpy);
 }
+XFlush(dpy);
+holdfocused=False; 
 }
 	if (mousemode == MWMove) {
 		focused->x+=xdiff; focused->y+=ydiff; draw(clients);
@@ -635,6 +631,10 @@ GC setcolor(int col) {
 
 void scrollwindows(Client *stack, int x, int y) {
 	while (stack) {
+		if (holdfocused && focused && stack==focused) {
+			stack = stack->next;
+			continue;
+		}
 		if (!(stack->tags & tags_stik)) {
 			stack->x+=x;
 			stack->y+=y;
