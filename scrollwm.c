@@ -82,12 +82,14 @@ static void focusclient(Client *);
 static void fullscreen(const char *);
 static Bool intarget(Client *);
 static void killclient(const char *);
-static void monocle(const char *);
 static void move(const char *);
+static Bool neighbors(Client *);
 static Bool onscreen(Client *);
 static void quit(const char *);
 static void scrollwindows(Client *,int,int);
-static GC setcolor(int);
+static GC   setcolor(int);
+static void shift(const char *);
+static Bool swap(Client *, Client *);
 static void switcher(const char *);
 static void spawn(const char *);
 static void tag(const char *);
@@ -119,6 +121,7 @@ static int mousemode;
 static XColor color;
 static Client *clients=NULL;
 static Client *focused=NULL;
+static Client *nextintarg=NULL,*previntarg=NULL;
 static Bool holdfocused=False;
 static Checkpoint *checks=NULL;
 static Bool running = True;
@@ -476,7 +479,7 @@ static void fullscreen(const char *arg) {
 	draw(clients);
 }
 
-static Bool intarget(Client *c) {
+Bool intarget(Client *c) {
 	char tm = targetmode;
 	if (tm == 'a') return True;
 	else if (tm == 's') return onscreen(c);
@@ -538,11 +541,6 @@ void maprequest(XEvent *e) {
 	draw(clients);
 }
 
-void monocle(const char *arg) {
-	if (focused) tile_one(focused);
-	draw(clients);
-}
-
 void move(const char *arg) {
 	if (arg[0] == 'L') animate(sw,0);
 	else if (arg[0] == 'R') animate(-sw,0);
@@ -590,6 +588,27 @@ holdfocused=False;
 		scrollwindows(clients,xdiff,ydiff);
 	}
 	start.x_root+=xdiff; start.y_root+=ydiff;
+}
+
+Bool neighbors(Client *c) {
+	previntarg = NULL;
+	nextintarg = NULL;
+	if (!intarget(c)) return False;
+	Client *stack;
+	for (stack = clients; stack && stack != c; stack = stack->next) {
+		if (	(targetmode == 'a') || (targetmode == 's' && onscreen(stack))	||
+				(targetmode == 't' && (stack->tags & (1<<curtag)))				||
+				(targetmode == 'v' && (stack->tags & ~tags_hide))				)
+			previntarg = stack;
+	}
+	for (nextintarg = stack->next;
+		nextintarg && !(
+			(targetmode == 'a') || (targetmode == 's' && onscreen(nextintarg)) ||
+			(targetmode == 't' && (nextintarg->tags & (1<<curtag))) ||
+			(targetmode == 'v' && (nextintarg->tags & ~tags_hide))
+		);
+		nextintarg = nextintarg->next);
+	return True;
 }
 
 Bool onscreen(Client *c) {
@@ -678,6 +697,26 @@ void status(char *msg) {
 	}
 	free(col);
 	draw(clients);
+}
+
+void shift(const char *arg) {
+	if (!focused) return;
+	neighbors(focused);
+	if (arg[0] == 'l' && swap(focused,previntarg))
+		focused = previntarg;
+	else if (arg[0] == 'r' && swap(focused,nextintarg))
+		focused = nextintarg;
+	draw(clients);
+}
+
+Bool swap(Client *a, Client *b) {
+	if (!a || !b) return False;
+	Client t;
+	t.title = a->title; a->title=b->title; b->title = t.title;
+	t.tlen = a->tlen; a->tlen=b->tlen; b->tlen = t.tlen;
+	t.tags = a->tags; a->tags=b->tags; b->tags = t.tags;
+	t.win = a->win; a->win=b->win; b->win = t.win;
+	return True;
 }
 
 void switcher(const char *arg) {
@@ -823,6 +862,18 @@ void tile_flow(Client *stack, int count) {
 	}
 }
 
+void tile_monocle(Client *stack,int count) {
+	while (stack) {
+		if (!intarget(stack)) {
+			stack = stack->next;
+			continue;
+		}
+		tile_one(stack);
+		stack = stack->next;
+	}
+}
+
+
 void tile_rstack(Client *stack, int count) {
 	while (!intarget(stack)) stack=stack->next;
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
@@ -873,6 +924,7 @@ void tile(const char *arg) {
 	if (arg[0] == 't') tile_ttwm(clients,i);
 	else if (arg[0] == 'r') tile_rstack(clients,i);
 	else if (arg[0] == 'b') tile_bstack(clients,i);
+	else if (arg[0] == 'm') tile_monocle(clients,i);
 	else if (arg[0] == 'f') tile_flow(clients,i);
 	else if (arg[0] == 'i') {
 		tilebias += 2;

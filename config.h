@@ -41,7 +41,7 @@ static int			tilebias			= 0;
 #define MOD1 Mod4Mask
 #define MOD2 Mod1Mask
 static Key keys[] = {
-	/* modifier				key			function	argument */
+	/* modifier			key			function	argument */
 	/* launchers + misc: */
 	{ MOD1,				XK_Return,	spawn,		CMD(TERM)		},
 	{ MOD1,				XK_p,		spawn,		CMD(DMENU)		},
@@ -60,36 +60,42 @@ static Key keys[] = {
 	{ MOD1|MOD2,		XK_t,		tile,		"ttwm"			},
 	{ MOD1|MOD2,		XK_r,		tile,		"rstack"		},
 	{ MOD1|MOD2,		XK_b,		tile,		"bstack"		},
+	{ MOD1|MOD2,		XK_m,		tile,		"monocle"		},
 	{ MOD1|MOD2,		XK_f,		tile,		"flow"			},
-	{ MOD1|MOD2,		XK_m,		monocle,	NULL			},
+	/* target modes */
 	{ MOD1,				XK_s,		target,		"screen"		},
 	{ MOD1,				XK_t,		target,		"tag"			},
 	{ MOD1,				XK_v,		target,		"visible"		},
 	/* desktop movement */
-	{ MOD1,				XK_Down,	move,		"DOWN"			},
-	{ MOD1,				XK_Up,		move,		"UP"			},
-	{ MOD1,				XK_Left,	move,		"LEFT"			},
-	{ MOD1,				XK_Right,	move,		"RIGHT"			},
-	{ MOD1,				XK_j,		move,		"down"			},
-	{ MOD1,				XK_k,		move,		"up"			},
-	{ MOD1,				XK_h,		move,		"left"			},
-	{ MOD1,				XK_l,		move,		"right"			},
+	{ MOD1|MOD2,		XK_Down,	move,		"DOWN"			},
+	{ MOD1|MOD2,		XK_Up,		move,		"UP"			},
+	{ MOD1|MOD2,		XK_Left,	move,		"LEFT"			},
+	{ MOD1|MOD2,		XK_Right,	move,		"RIGHT"			},
+	{ MOD1|MOD2,		XK_j,		move,		"down"			},
+	{ MOD1|MOD2,		XK_k,		move,		"up"			},
+	{ MOD1|MOD2,		XK_h,		move,		"left"			},
+	{ MOD1|MOD2,		XK_l,		move,		"right"			},
+	/* client swapping */
+	{ MOD1,				XK_j,		shift,		"left"			},
+	{ MOD1,				XK_k,		shift,		"right"			},
+	{ MOD1,				XK_h,		shift,		"left"			},
+	{ MOD1,				XK_l,		shift,		"right"			},
 	/* window cycling */
 	{ MOD1,				XK_Tab, 	cycle,		NULL			},
 	{ MOD1|ShiftMask,	XK_Tab, 	cycle,		"screen"		},
 	{ MOD1|MOD2,		XK_Tab, 	cycle,		"tag"			},
 	{ MOD1|ControlMask,	XK_Tab, 	cycle,		"visible"		},
 	/* select tag */
-	{ MOD1,				XK_1,		tag,		"1"		},
-	{ MOD1,				XK_2,		tag,		"2"		},
-	{ MOD1,				XK_3,		tag,		"3"		},
-	{ MOD1,				XK_4,		tag,		"4"		},
-	{ MOD1,				XK_5,		tag,		"5"		},
+	{ MOD1,				XK_1,		tag,		"1"				},
+	{ MOD1,				XK_2,		tag,		"2"				},
+	{ MOD1,				XK_3,		tag,		"3"				},
+	{ MOD1,				XK_4,		tag,		"4"				},
+	{ MOD1,				XK_5,		tag,		"5"				},
 	/* tag operations: hide-others, hidden,  sticky, normal(unstick+unhide) */
-	{ MOD1|MOD2,		XK_o,		tagconfig,	"others"},
-	{ MOD1|MOD2,		XK_h,		tagconfig,	"hide"	},
-	{ MOD1|MOD2,		XK_s,		tagconfig,	"stick"	},
-	{ MOD1|MOD2,		XK_n,		tagconfig,	"normal"},
+	{ MOD1|ControlMask,	XK_o,		tagconfig,	"others"		},
+	{ MOD1|ControlMask,	XK_h,		tagconfig,	"hide"			},
+	{ MOD1|ControlMask,	XK_s,		tagconfig,	"stick"			},
+	{ MOD1|ControlMask,	XK_n,		tagconfig,	"normal"		},
 	/* assign/remove a window to/from a tag */
 	{ MOD1|MOD2,		XK_1,		toggletag,	"1"				},
 	{ MOD1|MOD2,		XK_2,		toggletag,	"2"				},
@@ -108,7 +114,7 @@ static Button buttons[] = {
 //	{0,					1,			window,		"move"		},
 	{0,					2,			cycle_tile,	NULL		},
 //	{0,					3,			window,		"resize"	},
-	{0,					4,			monocle,	NULL		},
+	{0,					4,			tile,		"monocle"	},
 //	{0,					5,			UNASSIGNED,	NULL		},
 	{MOD1,				1,			window,		"move"		},
 	{MOD1,				2,			window,		"zoom"		},
