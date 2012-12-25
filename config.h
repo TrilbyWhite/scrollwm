@@ -30,7 +30,6 @@ static const Bool	animations			= True;
 static const Bool	activeedges			= True;
 static const int	animatespeed		= 18;
 static Bool			autoretile			= False;
-static char			curtile[]			= "rstack";
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
 static int			tilebias			= 0;

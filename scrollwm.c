@@ -128,6 +128,7 @@ static Bool running = True;
 static int tags_stik = 0, tags_hide = 0, tags_urg = 0;
 static int curtag = 0;
 static int ntilemode = 0;
+static char curtile[2] = "0";
 static int statuswidth = 0;
 static FILE *inpipe;
 static char targetmode = 's';
@@ -1071,6 +1072,7 @@ int main(int argc, const char **argv) {
 	    XGrabButton(dpy,buttons[i].button,buttons[i].mod,root,True,ButtonPressMask,
 			GrabModeAsync,GrabModeAsync,None,None);
 	/* main loop */
+	curtile[0] = tile_modes[0][0];
 	draw(clients);
     XEvent ev;
 	int xfd, sfd;
