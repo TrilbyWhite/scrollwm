@@ -29,6 +29,8 @@ static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
 static const Bool	activeedges			= True;
 static const int	animatespeed		= 18;
+static Bool			autoretile			= False;
+static char			curtile[]			= "rstack";
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
 static int			tilebias			= 0;
@@ -57,6 +59,7 @@ static Key keys[] = {
 	{ MOD1,				XK_space,	cycle_tile,	NULL			},
 	{ MOD1,				XK_i,		tile,		"increase"		},
 	{ MOD1,				XK_d,		tile,		"decrease"		},
+	{ MOD1,				XK_r,		tile,		"autoretile"	},
 	{ MOD1|MOD2,		XK_t,		tile,		"ttwm"			},
 	{ MOD1|MOD2,		XK_r,		tile,		"rstack"		},
 	{ MOD1|MOD2,		XK_b,		tile,		"bstack"		},

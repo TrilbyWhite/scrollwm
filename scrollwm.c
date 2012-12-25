@@ -538,6 +538,7 @@ void maprequest(XEvent *e) {
 		focusclient(c);
 	}
 	if (fsme) fullscreen(NULL);
+	else if (autoretile) tile(curtile);
 	draw(clients);
 }
 
@@ -917,6 +918,7 @@ void tile_ttwm(Client *stack, int count) {
 void tile(const char *arg) {
 	int i = 0;
 	Client *c;
+	if (arg[0] != 'i' && arg[0] != 'd' && arg[0] != 'a') curtile[0] = arg[0];
 	for (c = clients; c; c = c->next)
 		if (intarget(c)) i++;
 	if (i == 0) return;
@@ -927,13 +929,18 @@ void tile(const char *arg) {
 	else if (arg[0] == 'm') tile_monocle(clients,i);
 	else if (arg[0] == 'f') tile_flow(clients,i);
 	else if (arg[0] == 'i') {
-		tilebias += 2;
-		tile(tile_modes[ntilemode]);
+		tilebias += 4;
+		tile(curtile);
 	}
 	else if (arg[0] == 'd') {
-		tilebias -= 2;
-		tile(tile_modes[ntilemode]);
+		tilebias -= 4;
+		tile(curtile);
 	}
+	else if (arg[0] == 'a') {
+		if ( (autoretile=~autoretile) )
+			tile(curtile);
+	}
+	else return;
 	draw(clients);
 }
 
@@ -959,6 +966,7 @@ void unmanage(Client *c) {
 	free(c);
 	c = NULL;
 	if (!focused) if ( (focused=clients) ) cycle("screen");
+	if (autoretile) tile(curtile);
 	draw(clients);
 }
 
