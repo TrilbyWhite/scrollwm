@@ -813,7 +813,8 @@ void tagconfig(const char *arg) {
 	}
 	if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
 	else XMoveWindow(dpy,bar,0,(topbar ? -barheight: sh));
-	draw(clients);
+	if (autoretile) tile(curtile);
+	else draw(clients);
 }
 
 void target(const char *arg) {
@@ -893,7 +894,8 @@ void tile_rstack(Client *stack, int count) {
 		stack->h = MAX(h - tilegap - 2*borderwidth,win_min);
 		i++;
 		if (!stack->next)
-			stack->h = MAX(sh - (topbar ? 0: barheight) - stack->y - tilegap - 2*borderwidth,win_min);
+			stack->h = MAX(sh - (showbar ? (topbar ? 0: barheight) : 0)
+				- stack->y - tilegap - 2*borderwidth,win_min);
 	}
 }
 
