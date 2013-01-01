@@ -785,7 +785,9 @@ void tag(const char *arg) {
 	curtag = arg[0] - 49;
 	tags_urg &= ~(1<<curtag);
 	Client *c, *t=NULL;
-	if (clients) {
+	if (tagpoints)
+		checkpoint(arg);
+	else if (clients) {
 		for (c = clients; c; c = c->next) if (c->tags & (1<<curtag)) {
 			if (!t) t = c;
 			XRaiseWindow(dpy,c->win);

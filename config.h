@@ -28,6 +28,7 @@ static const Bool	highlightfocused	= True;
 static const Bool	scrolltofocused		= True;
 static const Bool	animations			= True;
 static const Bool	activeedges			= True;
+static const Bool	tagpoints			= True;
 static const int	animatespeed		= 18;
 static Bool			autoretile			= False;
 static const int	borderwidth			= 1;
