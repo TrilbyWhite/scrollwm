@@ -216,15 +216,14 @@ static char checkpoint_helper(const char *arg) {
 void checkpoint_init() {
 	int i;
 	Checkpoint *cp;
-	for (i = 0; i < 6; i++) {
+	for (i = 0; i < 1 || tag_name[i-1]; i++) {
 		cp = (Checkpoint *) calloc(1,sizeof(Checkpoint));
 		cp->zoom = 1.0;
 		cp->key =  48 + i;
-		cp->y = sh*(i-1);
+		cp->y = (i > 0 ? sh*(i-1) : 0);
 		cp->next = checks;
 		checks = cp;
 	}
-	checks->y=0; /* checkpoint 0 and 1 are initialy equivalent */
 }
 
 void checkpoint(const char *arg) {
