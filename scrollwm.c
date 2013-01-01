@@ -22,6 +22,11 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define SCWM_FLOATING	0x0001
+#define SCWM_TRANSIENT	0x0003
+#define SCWM_TILED		0xFF00
+#define SCWM_ANY		0xFFFF
+
 enum {Background, Default, Target, Hidden, Normal, Sticky, Urgent, Title, TagList, LASTColor };
 enum {MOff, MWMove, MWResize, MDMove, MDResize };
 
@@ -44,9 +49,10 @@ struct Client {
 	int tlen;
 	int x, y;
 	float w, h;
-	int tags;
+	int tags, flags;
 	Client *next;
 	Window win;
+	Window parent;
 };
 
 typedef struct Checkpoint Checkpoint;
@@ -80,7 +86,7 @@ static void desktop(const char *);
 static void draw(Client *);
 static void focusclient(Client *);
 static void fullscreen(const char *);
-static Bool intarget(Client *);
+static Bool intarget(Client *,int);
 static void killclient(const char *);
 static void move(const char *);
 static Bool neighbors(Client *);
@@ -480,9 +486,10 @@ static void fullscreen(const char *arg) {
 	draw(clients);
 }
 
-Bool intarget(Client *c) {
+Bool intarget(Client *c,int flags) {
 	char tm = targetmode;
-	if (tm == 'a') return True;
+	if (c->flags & ~flags) return False;
+	else if (tm == 'a') return True;
 	else if (tm == 's') return onscreen(c);
 	else if (tm == 't') return (c->tags & (1<<curtag));
 	else if (tm == 'v') return (c->tags & ~tags_hide);
@@ -531,6 +538,10 @@ void maprequest(XEvent *e) {
 		}
 		c->tags = (1<<curtag);
 		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
+		if (XGetTransientForHint(dpy,c->win,&c->parent))
+			c->flags |= SCWM_TRANSIENT;
+		else
+			c->parent = root;
 		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
 		c->next = clients;
 		clients = c;
@@ -595,7 +606,7 @@ holdfocused=False;
 Bool neighbors(Client *c) {
 	previntarg = NULL;
 	nextintarg = NULL;
-	if (!intarget(c)) return False;
+	if (!intarget(c,SCWM_ANY)) return False;
 	Client *stack;
 	for (stack = clients; stack && stack != c; stack = stack->next) {
 		if (	(targetmode == 'a') || (targetmode == 's' && onscreen(stack))	||
@@ -729,7 +740,7 @@ void switcher(const char *arg) {
 	XKeyEvent *ev;
 	Client *selclient = NULL;
 	while (stack) {
-		if (intarget(stack)) n++;
+		if (intarget(stack,SCWM_ANY)) n++;
 		stack = stack->next;
 	}
 	if (n == 0) return;
@@ -744,7 +755,7 @@ void switcher(const char *arg) {
 		n=0;
 		stack = clients;
 		while (stack) {
-			if (intarget(stack)) {
+			if (intarget(stack,SCWM_ANY)) {
 				if (sel == n) {
 					setcolor(Target);
 					selclient = stack;
@@ -825,7 +836,7 @@ void target(const char *arg) {
 }
 
 void tile_one(Client *stack) {
-	while (!intarget(stack)) stack=stack->next;
+	while (!intarget(stack,SCWM_TILED)) stack=stack->next;
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
@@ -833,7 +844,7 @@ void tile_one(Client *stack) {
 }
 
 void tile_bstack(Client *stack, int count) {
-	while (!intarget(stack)) stack=stack->next;
+	while (!intarget(stack,SCWM_TILED)) stack=stack->next;
 	int w = (sw - tilegap)/(count-1);
 	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
@@ -842,7 +853,7 @@ void tile_bstack(Client *stack, int count) {
 	stack->h = h + tilebias;
 	int i=0;
 	while ((stack=stack->next)) {
-		if (!intarget(stack)) continue;
+		if (!intarget(stack,SCWM_TILED)) continue;
 		stack->x = tilegap + i*w;
 		stack->y = (showbar && topbar ? barheight : 0) + h + 2*(tilegap+borderwidth) + tilebias;
 		stack->w = MAX(w - tilegap - 2*borderwidth,win_min);
@@ -855,7 +866,7 @@ void tile_bstack(Client *stack, int count) {
 void tile_flow(Client *stack, int count) {
 	int x = 0;
 	while (stack) {
-		if (!intarget(stack)) {
+		if (!intarget(stack,SCWM_TILED)) {
 			stack = stack->next;
 			continue;
 		}
@@ -869,7 +880,7 @@ void tile_flow(Client *stack, int count) {
 
 void tile_monocle(Client *stack,int count) {
 	while (stack) {
-		if (!intarget(stack)) {
+		if (!intarget(stack,SCWM_TILED)) {
 			stack = stack->next;
 			continue;
 		}
@@ -880,7 +891,7 @@ void tile_monocle(Client *stack,int count) {
 
 
 void tile_rstack(Client *stack, int count) {
-	while (!intarget(stack)) stack=stack->next;
+	while (!intarget(stack,SCWM_TILED)) stack=stack->next;
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	int h = (sh - (showbar && topbar ? barheight : 0) - tilegap)/(count-1);
 	stack->x = tilegap;
@@ -889,7 +900,7 @@ void tile_rstack(Client *stack, int count) {
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	while ((stack=stack->next)) {
-		if (!intarget(stack)) continue;
+		if (!intarget(stack,SCWM_TILED)) continue;
 		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap + i*h;
 		stack->w = w - tilebias;
@@ -902,7 +913,7 @@ void tile_rstack(Client *stack, int count) {
 }
 
 void tile_ttwm(Client *stack, int count) {
-	while (!intarget(stack)) stack=stack->next;
+	while (!intarget(stack,SCWM_TILED)) stack=stack->next;
 	int w = (sw - tilegap)/2 - (tilegap + 2*borderwidth);
 	stack->x = tilegap;
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
@@ -911,7 +922,7 @@ void tile_ttwm(Client *stack, int count) {
 	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
 	while ((stack=stack->next)) {
-		if (!intarget(stack)) continue;
+		if (!intarget(stack,SCWM_TILED)) continue;
 		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
 		stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 		stack->w = w - tilebias;
@@ -925,7 +936,7 @@ void tile(const char *arg) {
 	Client *c;
 	if (arg[0] != 'i' && arg[0] != 'd' && arg[0] != 'a') curtile[0] = arg[0];
 	for (c = clients; c; c = c->next)
-		if (intarget(c)) i++;
+		if (intarget(c,SCWM_TILED)) i++;
 	if (i == 0) return;
 	else if (i == 1) { tile_one(clients); draw(clients); return; }
 	if (arg[0] == 't') tile_ttwm(clients,i);
@@ -958,6 +969,7 @@ void toggletag(const char *arg) {
 
 void unmanage(Client *c) {
 	Client *t;
+	Bool retile = (autoretile ? !(c->flags & ~SCWM_TILED) : False);
 	if ( fullscreenstate && (c->x==-borderwidth) && (c->y==-borderwidth) &&
 			(c->w==sw) && (c->h==sh) )
 		fullscreen(NULL);
@@ -971,8 +983,8 @@ void unmanage(Client *c) {
 	free(c);
 	c = NULL;
 	if (!focused) focused=clients;
-	if (focused) cycle("screen");
-	if (autoretile) tile(curtile);
+	//if (focused) cycle("screen");
+	if (retile) tile(curtile);
 	draw(clients);
 }
 
