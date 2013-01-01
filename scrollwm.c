@@ -982,8 +982,10 @@ void unmanage(Client *c) {
 	XFree(c->title);
 	free(c);
 	c = NULL;
-	if (!focused) focused=clients;
-	//if (focused) cycle("screen");
+	if (!focused) {
+		focused=clients;
+		cycle("screen");
+	}
 	if (retile) tile(curtile);
 	draw(clients);
 }
