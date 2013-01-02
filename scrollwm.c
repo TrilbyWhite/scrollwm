@@ -379,7 +379,6 @@ void draw(Client *stack) {
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
 	}
-	if (focused) XRaiseWindow(dpy,focused->win);
 	/* STATUS BAR */
 	XFillRectangle(dpy,buf,setcolor(Background),0,0,sw,barheight);
 	/* tags */
@@ -477,6 +476,7 @@ static void fullscreen(const char *arg) {
 		ww=focused->w; wh=focused->h;
 		focused->x = -borderwidth; focused->y = -borderwidth;
 		focused->w = sw; focused->h = sh;
+		XRaiseWindow(dpy,focused->win);
 	}
 	else {
 		if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
