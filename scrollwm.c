@@ -379,6 +379,7 @@ void draw(Client *stack) {
 		XChangeWindowAttributes(dpy,stack->win,CWBorderPixel,&wa);
 		stack = stack->next;
 	}
+	if (focused) XRaiseWindow(dpy,focused->win);
 	/* STATUS BAR */
 	XFillRectangle(dpy,buf,setcolor(Background),0,0,sw,barheight);
 	/* tags */

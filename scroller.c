@@ -25,6 +25,7 @@
 /* input files */
 static const char *CPU_FILE		= "/proc/stat";
 static const char *MEM_FILE		= "/proc/meminfo";
+static const char *WIFI_FILE	= "/proc/net/wireless";
 static const char *BATT_NOW		= "/sys/class/power_supply/BAT1/charge_now";
 static const char *BATT_FULL	= "/sys/class/power_supply/BAT1/charge_full";
 static const char *BATT_STAT	= "/sys/class/power_supply/BAT1/status";
@@ -103,6 +104,17 @@ int main(int argc, const char **argv) {
 			else if (n > 95) printf("{#%06X}%c  ",Green,240);
 			else printf("{#%06X}%c  ",Grey,240);
 		}
+		if ( (in=fopen(WIFI_FILE,"r")) ) {       /* WIFI MONITOR */
+			n = 0;
+			fscanf(in,"%*[^\n]\n%*[^\n]\n wlan0: %*d %d.",&n);
+			fclose(in);
+			if (n == 0) printf("{#%06X}%c  ",Red,173);
+			else if (n > 63) printf("{#%06X}%c  ",Green,173);
+			else if (n > 61) printf("{#%06X}%c  ",Blue,173);
+			else if (n > 56) printf("{#%06X}%c  ",Grey,173);
+			else if (n > 51) printf("{#%06X}%c  ",Grey,172);
+			else printf("{#%06X}%c  ",Yellow,172);
+		}
 		if ( (in=fopen(mail_file,"r")) ) {       /* MAIL NOTIFICATION */
 			fscanf(in,"%d",&n);
 			fclose(in);
@@ -110,7 +122,7 @@ int main(int argc, const char **argv) {
 			else if (n == 2) printf("{#%06X}%c  ",Green,202);
 			else printf("{#%06X}%c  ",Grey,203);
 		}
-		if (loops++ > 90) {
+		if (loops++ > 90) {					/* TIME */
 			time(&current);
 			strftime(clk,6,"%H:%M",localtime(&current));
 			loops = 0;
