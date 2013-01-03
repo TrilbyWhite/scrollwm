@@ -468,18 +468,15 @@ void focusclient(Client *c) {
 static void fullscreen(const char *arg) {
 	if (!focused) return;
 	static int wx,wy,ww,wh;
-	if (showbar) XMoveWindow(dpy,bar,0,(topbar ? -barheight: sh));
-	fullscreenstate = !fullscreenstate;
-	if (fullscreenstate) {
+	if ( (fullscreenstate=!fullscreenstate) ) {
 		wx=focused->x; wy=focused->y;
 		ww=focused->w; wh=focused->h;
 		focused->x = -borderwidth; focused->y = -borderwidth;
 		focused->w = sw; focused->h = sh;
 		XRaiseWindow(dpy,focused->win);
-		XRaiseWindow(dpy,bar);
 	}
 	else {
-		if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
+		XRaiseWindow(dpy,bar);
 		focused->x = wx; focused->y = wy;
 		focused->w = ww; focused->h = wh;
 	}
