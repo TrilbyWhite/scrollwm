@@ -441,7 +441,6 @@ void draw(Client *stack) {
 	if (statuswidth)
 		XCopyArea(dpy,sbar,buf,gc,0,0,statuswidth,barheight,sw-statuswidth,0);
 	XCopyArea(dpy,buf,bar,gc,0,0,sw,barheight,0,0);
-	XRaiseWindow(dpy,bar);
 	XFlush(dpy);
 }
 
@@ -477,6 +476,7 @@ static void fullscreen(const char *arg) {
 		focused->x = -borderwidth; focused->y = -borderwidth;
 		focused->w = sw; focused->h = sh;
 		XRaiseWindow(dpy,focused->win);
+		XRaiseWindow(dpy,bar);
 	}
 	else {
 		if (showbar) XMoveWindow(dpy,bar,0,(topbar ? 0 : sh - barheight));
@@ -803,6 +803,7 @@ void tag(const char *arg) {
 			if (!t) t = c;
 			XRaiseWindow(dpy,c->win);
 		}
+		XRaiseWindow(dpy,bar);
 		if (! (focused->tags & (1<<curtag)) && t ) focusclient(t);
 	}
 	draw(clients);
@@ -921,6 +922,7 @@ void tile_ttwm(Client *stack, int count) {
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
 	int i=0;
 	XRaiseWindow(dpy,stack->next->win);
+	XRaiseWindow(dpy,bar);
 	while ((stack=stack->next)) {
 		if (!intarget(stack,SCWM_TILED)) continue;
 		stack->x = w + 2*(tilegap+borderwidth) + tilebias;
