@@ -24,6 +24,7 @@
 
 #define SCWM_FLOATING	0x0001
 #define SCWM_TRANSIENT	0x0003
+#define SCWM_FULLSCREEN	0x0004
 #define SCWM_TILED		0xFF00
 #define SCWM_ANY		0xFFFF
 
@@ -138,7 +139,7 @@ static char curtile[2] = "0";
 static int statuswidth = 0;
 static FILE *inpipe;
 static char targetmode = 's';
-static Bool fullscreenstate = False;
+//static Bool fullscreenstate = False;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
 	[ButtonRelease]		= buttonrelease,
@@ -462,13 +463,14 @@ void focusclient(Client *c) {
 	if (!c) return;
 	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
 	XRaiseWindow(dpy,c->win);
-	XRaiseWindow(dpy,bar);
+	if (!(c->flags & SCWM_FULLSCREEN)) XRaiseWindow(dpy,bar);
 }
 
 static void fullscreen(const char *arg) {
 	if (!focused) return;
 	static int wx,wy,ww,wh;
-	if ( (fullscreenstate=!fullscreenstate) ) {
+	if ( !(focused->flags & SCWM_FULLSCREEN) ) {
+		focused->flags |= SCWM_FULLSCREEN;
 		wx=focused->x; wy=focused->y;
 		ww=focused->w; wh=focused->h;
 		focused->x = -borderwidth; focused->y = -borderwidth;
@@ -476,6 +478,7 @@ static void fullscreen(const char *arg) {
 		XRaiseWindow(dpy,focused->win);
 	}
 	else {
+		focused->flags &= ~SCWM_FULLSCREEN;
 		XRaiseWindow(dpy,bar);
 		focused->x = wx; focused->y = wy;
 		focused->w = ww; focused->h = wh;
@@ -801,7 +804,8 @@ void tag(const char *arg) {
 			XRaiseWindow(dpy,c->win);
 		}
 		XRaiseWindow(dpy,bar);
-		if (! (focused->tags & (1<<curtag)) && t ) focusclient(t);
+		if (! (focused->tags & (1<<curtag)) && t ) focused = t;
+		focusclient(focused);
 	}
 	draw(clients);
 }
@@ -969,9 +973,9 @@ void toggletag(const char *arg) {
 void unmanage(Client *c) {
 	Client *t;
 	Bool retile = (autoretile ? !(c->flags & ~SCWM_TILED) : False);
-	if ( fullscreenstate && (c->x==-borderwidth) && (c->y==-borderwidth) &&
-			(c->w==sw) && (c->h==sh) )
-		fullscreen(NULL);
+//	if ( fullscreenstate && (c->x==-borderwidth) && (c->y==-borderwidth) &&
+//			(c->w==sw) && (c->h==sh) )
+//		fullscreen(NULL);
 	if (c == focused) focusclient(c->next);
 	if (c == clients) clients = c->next;
 	else {
