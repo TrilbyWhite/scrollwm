@@ -25,6 +25,7 @@
 /* input files */
 static const char *CPU_FILE		= "/proc/stat";
 static const char *MEM_FILE		= "/proc/meminfo";
+static const char *AUD_FILE		= "/proc/asound/card0/codec#0";
 static const char *WIFI_FILE	= "/proc/net/wireless";
 static const char *BATT_NOW		= "/sys/class/power_supply/BAT1/charge_now";
 static const char *BATT_FULL	= "/sys/class/power_supply/BAT1/charge_full";
@@ -33,15 +34,15 @@ static const char *BATT_STAT	= "/sys/class/power_supply/BAT1/status";
 /* colors			  			    R G B */
 static const long int White		= 0xDDDDDD;
 static const long int Grey		= 0x686868;
-static const long int Blue		= 0x122864;
-static const long int Green		= 0x308030;
+static const long int Blue		= 0x68B0E0;
+static const long int Green		= 0x288428;
 static const long int Yellow	= 0x997700;
-static const long int Red		= 0x990000;
+static const long int Red		= 0xAA2200;
 
 /* variables */
 static long		j1,j2,j3,j4,ln1,ln2,ln3,ln4;
 static int		n, loops = 100;
-static char		c, clk[8], *aud_file, *mail_file;
+static char		c, clk[8];
 static FILE		*in;
 static time_t	current;
 
@@ -49,55 +50,55 @@ int main(int argc, const char **argv) {
 	in = fopen(CPU_FILE,"r");
 	fscanf(in,"cpu %ld %ld %ld %ld",&j1,&j2,&j3,&j4);
 	fclose(in);
-	char *homedir = getenv("HOME");
-	if (homedir != NULL) {
-		aud_file = (char *) calloc(strlen(homedir)+15,sizeof(char));
-		strcpy(aud_file,homedir);
-		strcat(aud_file,"/.audio_volume");
-		mail_file = (char *) calloc(strlen(homedir)+10,sizeof(char));
-		strcpy(mail_file,homedir);
-		strcat(mail_file,"/.newmail");
-	}
-	else {
-		aud_file = NULL;
-		mail_file = NULL;
-	}
 	/* main loop */
 	for (;;) {
-		loops ++;
+		printf("{#%06X}[ ",White);
 		if ( (in=fopen(CPU_FILE,"r")) ) {       /* CPU MONITOR */
 			fscanf(in,"cpu %ld %ld %ld %ld",&ln1,&ln2,&ln3,&ln4);
 			fclose(in);
 			if (ln4>j4) n=(int)100*(ln1-j1+ln2-j2+ln3-j3)/(ln1-j1+ln2-j2+ln3-j3+ln4-j4);
 			else n=0;
 			j1=ln1; j2=ln2; j3=ln3; j4=ln4;
-			if (n > 85) printf("{#%06X}%c  ",Red,209);
-			else if (n > 60) printf("{#%06X}%c  ",Yellow,209);
-			else if (n > 20) printf("{#%06X}%c  ",Blue,209);
-			else printf("{#%06X}%c  ",Grey,209);
+			if (n > 85) printf("{#%06X}%c %d%%",Red,209,n);
+			else if (n > 60) printf("{#%06X}%c %d%%",Yellow,209,n);
+			else if (n > 20) printf("{#%06X}%c  %d%%",Blue,209,n);
+			else printf("{#%06X}%c %d%%",Grey,209,n);
 		}
 		if ( (in=fopen(MEM_FILE,"r")) ) {		/* MEM USAGE MONITOR */
 			fscanf(in,"MemTotal: %ld kB\nMemFree: %ld kB\nBuffers: %ld kB\nCached: %ld kB\n", &ln1,&ln2,&ln3,&ln4);
 			fclose(in);
-			n = 100*(ln2+ln3+ln4)/ln1;
-			if (n > 80) printf("{#%06X}%c  ",Grey,206);
-			else if (n > 65) printf("{#%06X}%c  ",Green,206);
-			else if (n > 15) printf("{#%06X}%c  ",Yellow,206);
-			else printf("{#%06X}%c  ",Red,206);
+			n = 100-100*(ln2+ln3+ln4)/ln1;
+			printf("{#%06X} | ",White);
+			if (n < 20) printf("{#%06X}%c %d%%",Grey,206,n);
+			else if (n < 40) printf("{#%06X}%c %d%%",Green,206,n);
+			else if (n < 85) printf("{#%06X}%c %d%%",Yellow,206,n);
+			else printf("{#%06X}%c  %d%%",Red,206,n);
 		}
-		if ( (in=fopen(aud_file,"r")) ) {       /* AUDIO VOLUME MONITOR */
-			fscanf(in,"%d",&n);
+		if ( (in=fopen(AUD_FILE,"r")) ) {       /* AUDIO VOLUME MONITOR */
+			while ( fscanf(in,"Default Amp-Out caps: ofs=0x%x",&ln1) !=1 )
+				fscanf(in,"%*[^\n]\n");
+			while ( fscanf(in," Amp-Out vals: [0x%x",&ln2) != 1 )
+				fscanf(in,"%*[^\n]\n");
+			while ( fscanf(in," Digital:%c",&c) != 1 )
+				fscanf(in,"%*[^\n]\n");
 			fclose(in);
-			if (n == -1) printf("{#%06X}%c  ",Red,235);
-			else if (n == 100) printf("{#%06X}%c  ",Blue,237);
-			else if (n < 15) printf("{#%06X}%c  ",Yellow,236);
-			else printf("{#%06X}%c  ",Grey,237);
+			printf("{#%06X} | ",White);
+			if ( c == '\n' )
+				printf("{#%06X}%c Mute",Red,235);
+			else if (ln2 < 65) printf("{#%06X}%c 0%",Red,236);
+			else {
+				n = 100*(ln2-64)/(ln1-64);
+				if (n > 98) printf("{#%06X}%c %d%%",Blue,237,n);
+				else if (n < 25) printf("{#%06X}%c %d%%",Yellow,236,n);
+				else printf("{#%06X}%c %d%%",Grey,237,n);
+			}
 		}
 		if ( (in=fopen(BATT_NOW,"r")) ) {       /* BATTERY MONITOR */
 			fscanf(in,"%ld\n",&ln1); fclose(in);
 			if ( (in=fopen(BATT_FULL,"r")) ) { fscanf(in,"%ld\n",&ln2); fclose(in); }
 			if ( (in=fopen(BATT_STAT,"r")) ) { fscanf(in,"%c",&c); fclose(in); }
 			n = (ln1 ? ln1 * 100 / ln2 : 0);
+			printf("{#%06X} | ",White);
 			if (c == 'C') printf("{#%06X}%c  ",Yellow,181);
 			else if (n < 10) printf("{#%06X}%c  ",Red,238);
 			else if (n < 20) printf("{#%06X}%c  ",Yellow,239);
@@ -106,32 +107,33 @@ int main(int argc, const char **argv) {
 		}
 		if ( (in=fopen(WIFI_FILE,"r")) ) {       /* WIFI MONITOR */
 			n = 0;
-			fscanf(in,"%*[^\n]\n%*[^\n]\n wlan0: %*d %d.",&n);
+			ln1 = fscanf(in,"%*[^\n]\n%*[^\n]\n wlan0: %*d %d.",&n);
 			fclose(in);
-			if (n == 0) printf("{#%06X}%c  ",Red,173);
-			else if (n > 63) printf("{#%06X}%c  ",Green,173);
-			else if (n > 61) printf("{#%06X}%c  ",Blue,173);
-			else if (n > 56) printf("{#%06X}%c  ",Grey,173);
-			else if (n > 51) printf("{#%06X}%c  ",Grey,172);
-			else printf("{#%06X}%c  ",Yellow,172);
+			if (ln1 == 1) {
+				printf("{#%06X} | ",White);
+				if (n == 0) printf("{#%06X}%c %d%%",Red,173,n);
+				else if (n > 63) printf("{#%06X}%c %d%%",Green,173,n);
+				else if (n > 61) printf("{#%06X}%c %d%%",Blue,173,n);
+				else if (n > 56) printf("{#%06X}%c %d%%",Grey,173,n);
+				else if (n > 51) printf("{#%06X}%c %d%%",Grey,172,n);
+				else printf("{#%06X}%c %d%%",Yellow,172,n);
+			}
 		}
-		if ( (in=fopen(mail_file,"r")) ) {       /* MAIL NOTIFICATION */
-			fscanf(in,"%d",&n);
-			fclose(in);
-			if (n == 1) printf("{#%06X}%c  ",Blue,202);
-			else if (n == 2) printf("{#%06X}%c  ",Green,202);
-			else printf("{#%06X}%c  ",Grey,203);
-		}
+//		if ( (in=fopen(mail_file,"r")) ) {       /* MAIL NOTIFICATION */
+//			fscanf(in,"%d",&n);
+//			fclose(in);
+//			if (n == 1) printf("{#%06X}%c (0/0)",Blue,202);
+//			else if (n == 2) printf("{#%06X}%c (0/0)",Green,202);
+//			else printf("{#%06X}%c (0/0)",Grey,203);
+//		}
 		if (loops++ > 90) {					/* TIME */
 			time(&current);
 			strftime(clk,6,"%H:%M",localtime(&current));
 			loops = 0;
 		}
-		printf("{#%06X}%c %s \n",White,182,clk);
+		printf("{#%06X} ]  {#%06X}%c{#%06X} %s \n",White,Blue,182,White,clk);
 		fflush(stdout);
 		usleep(500000);
 	}
-	if (aud_file) free(aud_file);
-	if (mail_file) free(mail_file);
 	return 0;
 }

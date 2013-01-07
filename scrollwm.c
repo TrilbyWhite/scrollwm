@@ -733,16 +733,12 @@ Bool swap(Client *a, Client *b) {
 }
 
 void switcher(const char *arg) {
-	Client *stack = clients;
-	int n = 0, sel = 0;
+	Client *stack, *selclient = NULL;
+	int n, sel = 0;
 	KeySym ks;
 	XEvent e;
 	XKeyEvent *ev;
-	Client *selclient = NULL;
-	while (stack) {
-		if (intarget(stack,SCWM_ANY)) n++;
-		stack = stack->next;
-	}
+	for (n = 0, stack = clients; stack; n++, stack = stack->next);
 	if (n == 0) return;
 	XMoveResizeWindow(dpy,bar,0,(topbar ? 0 : sh-(n+3)*barheight),sw,(n+3)*barheight);
 	XFillRectangle(dpy,bar,setcolor(Background),0,barheight,sw,(n+2)*barheight);
@@ -752,22 +748,17 @@ void switcher(const char *arg) {
 	while (True) {
 		XFillRectangle(dpy,bar,setcolor(Background),0,barheight+4,
 			sw,(n+2)*barheight-8);
-		n=0;
-		stack = clients;
-		while (stack) {
-			if (intarget(stack,SCWM_ANY)) {
-				if (sel == n) {
-					setcolor(Target);
-					selclient = stack;
-				}
-				else {
-					setcolor(Default);
-				}
-				XDrawString(dpy,bar,gc,10,(n+3)*barheight,
-					stack->title,strlen(stack->title));
-				n++;
+		for (n = 0, stack = clients; stack; n++, stack = stack->next) {
+			if (sel == n) {
+				setcolor(Target);
+				selclient = stack;
 			}
-			stack = stack->next;
+			else if (stack->flags & tags_hide) setcolor(Hidden);
+			else if (stack->flags & tags_stik) setcolor(Sticky);
+			else if (onscreen(stack)) setcolor(Title);
+			else setcolor(Default);
+			XDrawString(dpy,bar,gc,10,(n+3)*barheight,
+				stack->title,strlen(stack->title));
 		}
 		draw(clients);
 		XFlush(dpy);
