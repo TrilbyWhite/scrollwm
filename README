@@ -1,36 +1,6 @@
 ScrollWM
 
-This is currently at the concept stage only.  Do not expect this to do anything remotely useful as a WM yet.
+This readme is in desperate need of update.  The previous message suggested scrollwm was not ready for normal use.  I have now been using it as my sole WM on two computers for several weeks and it is working very well (for me).
 
-Mod4+mouse button 1 or 3 drag to move or resize a window.
-
-Mod4+Mod1+mouse button 1 drag to move the desktop
-
-Mod4+mouse button 2 to fit a window to the viewport (aka "maximize")
-
-Mod4+Enter launch urxvt
-Mod4+w launch luakit
-Mod4+p launch dmenu
-
-Mod4+N to select a tag
-Mod4+Alt+N to toggle a tag for the currently focused window
-Mod4+h to hide the current tag
-Mod4+s to "sticky" the current tag
-Mod4+n to remove hide and sticky bits from the current tag.
-
-STATUS BAR:
-Tags:
-Current tag is underlined
-Occupied tags are in light blue
-Hidden tags are orange
-Sticky tags are green
-
-Title:
-Current window title is displayed followed by the tags it is on
-
-BEHAVIOR:
-Sticky windows/tags do not scroll or zoom
-Hidden windws/tags are not seen
-
-That's it.
+I will next work on putting together a decent readme and man page.  But for now feel free to check in the thread on bbs.archlinux.org
 
