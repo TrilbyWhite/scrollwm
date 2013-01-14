@@ -2,7 +2,9 @@
 
 static const char font[] =  "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 static const char *tag_name[] = {"one", "two", "three", "four", "five", NULL};
-static const char *tile_modes[] = {"ttwm", "rstack", "bstack", "flow", NULL};
+static const char *tile_modes[] = {"ttwm", "rstack", "bstack", NULL};
+
+//#include "icons.h"
 
 static const char colors[LASTColor][9] = {
 	[Background]	= "#101010",
