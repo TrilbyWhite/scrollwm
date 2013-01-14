@@ -66,7 +66,7 @@ static const XPoint mem_icon[] = {
 			{1,9},	{2,9},			{4,9},	{5,9},			{7,9},	{8,9},
 };
 
-static const XPoint speaker_full_icon[] = {
+static const XPoint speaker_hi_icon[] = {
 									{4,0},			{6,0},
 							{3,1},	{4,1},					{7,1},
 					{2,2},	{3,2},	{4,2},							{8,2},
@@ -170,7 +170,7 @@ static const XPoint wifi_low_icon[] = {
 			{1,9},	{2,9},			{4,9},	{5,9},	
 };
 
-static const XPoint mail_full_icon[] = {
+static const XPoint mail_new_icon[] = {
 	{0,0},	{1,0},	{2,0},	{3,0},	{4,0},	{5,0},	{6,0},	{7,0},	{8,0},	{9,0},
 	{0,1},			{2,1},	{3,1},	{4,1},	{5,1},	{6,1},	{7,1},			{9,1},
 	{0,2},					{3,2},	{4,2},	{5,2},	{6,2},					{9,2},
@@ -183,7 +183,7 @@ static const XPoint mail_full_icon[] = {
 	{0,9},	{1,9},	{2,9},	{3,9},	{4,9},	{5,9},	{6,9},	{7,9},	{8,9},	{9,9},
 };
 
-static const XPoint mail_empty_icon[] = {
+static const XPoint mail_none_icon[] = {
 	{0,0},	{1,0},	{2,0},	{3,0},	{4,0},	{5,0},	{6,0},	{7,0},	{8,0},	{9,0},
 	{0,1},																	{9,1},
 	{0,2},																	{9,2},
@@ -263,10 +263,9 @@ static const XPoint batt_zero_icon[] = {
 
 static const Icon icons[] = {
 	MAKE_ICON(clock_icon),
-/*
 	MAKE_ICON(cpu_icon),
 	MAKE_ICON(mem_icon),
-	MAKE_ICON(speaker_full_icon),
+	MAKE_ICON(speaker_hi_icon),
 	MAKE_ICON(speaker_mid_icon),
 	MAKE_ICON(speaker_low_icon),
 	MAKE_ICON(speaker_mute_icon),
@@ -274,9 +273,8 @@ static const Icon icons[] = {
 	MAKE_ICON(wifi_hi_icon),
 	MAKE_ICON(wifi_mid_icon),
 	MAKE_ICON(wifi_low_icon),
-*/
-	MAKE_ICON(mail_full_icon),
-	MAKE_ICON(mail_empty_icon),
+	MAKE_ICON(mail_new_icon),
+	MAKE_ICON(mail_none_icon),
 	MAKE_ICON(batt_full_icon),
 	MAKE_ICON(batt_hi_icon),
 	MAKE_ICON(batt_mid_icon),
