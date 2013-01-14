@@ -4,6 +4,8 @@
 
 #define MAKE_ICON(x)	{ (sizeof(x)/sizeof(x[0])), (XPoint *) x }
 
+/* TODO: icons for mail, battery/power, what else? */
+
 static const int iconwidth = 10;
 static const int iconheight = 10;
 
