@@ -28,7 +28,7 @@
 *  4) battery files may differ (common change: BAT1 -> BAT0)
 *
 * COMPILE:
-*   $ sed -i 's/USERNAME/'$USER'/'
+*   $ sed -i 's/USERNAME/'$USER'/' scroller.c
 *   $ gcc -o scroller scroller.c
 *
 * NOTE:
