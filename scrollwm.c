@@ -119,7 +119,7 @@ static Window root, bar;
 static Pixmap buf, sbar;
 static int scr, sw, sh;
 static GC gc;
-#ifdef __TTWM_ICONS_H__
+#ifdef __SCWM_ICONS_H__
 static Pixmap iconbuf;
 static GC bgc;
 #endif
@@ -688,7 +688,10 @@ void spawn(const char *arg) {
 void status(char *msg) {
 	char *col = (char *) calloc(8,sizeof(char));
 	char *t,*c = msg;
-	int l,arg;
+	int l;
+#ifdef __SCWM_ICONS_H__
+	int arg;
+#endif
 	XColor color;
 	statuswidth = 0;
 	XFillRectangle(dpy,sbar,setcolor(Background),0,0,sw/2,barheight);
@@ -700,14 +703,14 @@ void status(char *msg) {
 				XAllocNamedColor(dpy,cmap,col,&color,&color);
 				XSetForeground(dpy,gc,color.pixel);
 			}
-#ifdef __TTWM_ICONS_H__
+#ifdef __SCWM_ICONS_H__
 			else if ( (*c == 'i') && (sscanf(c,"i %d",&arg) == 1) ) {
 				XFillRectangle(dpy,iconbuf,bgc,0,0,iconwidth,iconheight);
 				XDrawPoints(dpy,iconbuf,gc,icons[arg].pts,icons[arg].n,CoordModeOrigin);
 				XCopyArea(dpy,iconbuf,sbar,gc,0,0,iconwidth,iconheight,statuswidth,(barheight-iconheight)/2);
 				statuswidth+=iconwidth+1;
 			}
-#endif /* __TTWM_ICONS_H__ */
+#endif /* __SCWM_ICONS_H__ */
 			c = strchr(c,'}')+1;
 		}
 		else {
@@ -1068,7 +1071,7 @@ int main(int argc, const char **argv) {
 	bar = XCreateSimpleWindow(dpy,root,0,(topbar ? 0 : sh-barheight),sw,barheight,0,0,0);
 	buf = XCreatePixmap(dpy,root,sw,barheight,DefaultDepth(dpy,scr));
 	sbar = XCreatePixmap(dpy,root,sw/2,barheight,DefaultDepth(dpy,scr));
-#ifdef __TTWM_ICONS_H__
+#ifdef __SCWM_ICONS_H__
 	XAllocNamedColor(dpy,cmap,colors[Background],&color,&color);
 	bgc = DefaultGC(dpy,scr);
 	XSetForeground(dpy,bgc,color.pixel);

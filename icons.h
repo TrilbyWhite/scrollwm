@@ -1,6 +1,6 @@
 
-#ifndef __TTWM_ICONS_H__
-#define __TTWM_ICONS_H__		"TTWM Icons 0.5"
+#ifndef __SCWM_ICONS_H__
+#define __SCWM_ICONS_H__		"SCWM Icons 0.5"
 
 #define MAKE_ICON(x)	{ (sizeof(x)/sizeof(x[0])), (XPoint *) x }
 
@@ -14,7 +14,8 @@ typedef struct Icon {
 	XPoint *pts;
 } Icon;
 
-static const XPoint block_icon[] = {
+/*
+static const XPoint template_icon[] = {
 	{0,0},	{1,0},	{2,0},	{3,0},	{4,0},	{5,0},	{6,0},	{7,0},	{8,0},	{9,0},
 	{0,1},	{1,1},	{2,1},	{3,1},	{4,1},	{5,1},	{6,1},	{7,1},	{8,1},	{9,1},
 	{0,2},	{1,2},	{2,2},	{3,2},	{4,2},	{5,2},	{6,2},	{7,2},	{8,2},	{9,2},
@@ -26,6 +27,7 @@ static const XPoint block_icon[] = {
 	{0,8},	{1,8},	{2,8},	{3,8},	{4,8},	{5,8},	{6,8},	{7,8},	{8,8},	{9,8},
 	{0,9},	{1,9},	{2,9},	{3,9},	{4,9},	{5,9},	{6,9},	{7,9},	{8,9},	{9,9},
 };
+*/
 
 static const XPoint clock_icon[] = {
 					{2,0},	{3,0},	{4,0},	{5,0},	{6,0},	{7,0},
@@ -283,6 +285,6 @@ static const Icon icons[] = {
 };
 
 // vim: ts=4
-#endif /* __TTWM_ICONS_H__ */
+#endif /* __SCWM_ICONS_H__ */
 
 

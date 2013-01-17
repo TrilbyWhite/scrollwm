@@ -1,9 +1,10 @@
-/* See LICENSE file for copyright and license details. */
 
 static const char font[] =  "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*";
 static const char *tag_name[] = {"one", "two", "three", "four", "five", NULL};
 static const char *tile_modes[] = {"ttwm", "rstack", "bstack", NULL};
 
+/* uncomment to enable status icons */
+/* icons must be specified in the status input with {i #} format */
 //#include "icons.h"
 
 static const char colors[LASTColor][9] = {

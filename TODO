@@ -1,1 +1,3 @@
-maximize placed wrong with narrow borders
+
+-Refocus on window close
+-Check other atoms for "UNNAMED" windows to find something suitable
