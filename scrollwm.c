@@ -979,7 +979,12 @@ void toggletag(const char *arg) {
 void unmanage(Client *c) {
 	Client *t;
 //	Bool retile = (autoretile ? !(c->flags & ~SCWM_TILED) : False);
-	if (c == focused) focusclient(c->next);
+	if (c == focused) {
+		neighbors(c);
+		if (nextintarg) focusclient(nextintarg);
+		else if (previntarg) focusclient(previntarg);
+		else focusclient(NULL);
+	}
 	if (c == clients) clients = c->next;
 	else {
 		for (t = clients; t && t->next != c; t = t->next);
@@ -990,7 +995,7 @@ void unmanage(Client *c) {
 	c = NULL;
 	if (!focused) {
 		focused=clients;
-		cycle("screen");
+	//	cycle("screen");
 	}
 	if (autoretile) tile(curtile);
 	draw(clients);

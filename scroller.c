@@ -162,7 +162,7 @@ int main(int argc, const char **argv) {
 			while ( fscanf(in," Amp-Out vals: [0x%x",&ln3) != 1 )
 				fscanf(in,"%*[^\n]\n");
 			fclose(in);
-			if (ln3 == 0) printf("{#%06X}{i %d} ",Red,speaker_mute_icon);
+			if (ln3 != 0) printf("{#%06X}{i %d} ",Red,speaker_mute_icon);
 			else {
 				n = 100*ln2/ln1;
 				if (n > 95) printf("{#%06X}{i %d} ",Blue,speaker_hi_icon);
