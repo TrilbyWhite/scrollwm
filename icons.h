@@ -263,6 +263,19 @@ static const XPoint batt_zero_icon[] = {
 					{2,9},	{3,9},	{4,9},	{5,9},	{6,9},	{7,9},
 };
 
+static const XPoint batt_charge_icon[] = {
+													{6,0},	{7,0},
+											{5,1},	{6,1},
+									{4,2},	{5,2},	
+							{3,3},	{4,3},		
+					{2,4},	{3,4},	{4,4},	{5,4},	{6,4},	{7,4},	{8,4},
+			{1,5},	{2,5},	{3,5},	{4,5},	{5,5},	{6,5},	{7,5},
+											{5,6},	{6,6},
+									{4,7},	{5,7},
+							{3,8},	{4,8},
+					{2,9},	{3,9},
+};
+
 static const Icon icons[] = {
 	MAKE_ICON(clock_icon),
 	MAKE_ICON(cpu_icon),
@@ -282,6 +295,7 @@ static const Icon icons[] = {
 	MAKE_ICON(batt_mid_icon),
 	MAKE_ICON(batt_low_icon),
 	MAKE_ICON(batt_zero_icon),
+	MAKE_ICON(batt_charge_icon),
 };
 
 // vim: ts=4
