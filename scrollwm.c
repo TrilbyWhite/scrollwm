@@ -131,7 +131,7 @@ static XButtonEvent start;
 static int mousemode;
 static XColor color;
 static Client *clients=NULL;
-static Client *focused=NULL;
+static Client *focused=NULL,*slave=NULL;
 static Client *nextintarg=NULL,*previntarg=NULL;
 static Bool holdfocused=False;
 static Checkpoint *checks=NULL;
@@ -334,7 +334,14 @@ void cycle(const char *arg) {
 			if ( clients && !(clients->tags & prev->tags) )
 				while ( (focused=focused->next) && !(focused->tags & prev->tags) );
 		}
-	}	
+	}
+	else if (tm == 'o') {
+		if (!focused || !slave) return;
+		if (focused == slave)
+			for (focused = clients; !onscreen(focused); focused = focused->next);
+		else
+			focused = slave;
+	}
 	if (!focused) focused = prev;
 	focusclient(focused);
 	animatefocus();
@@ -467,6 +474,8 @@ void focusclient(Client *c) {
 	if (!c) return;
 	XSetInputFocus(dpy,c->win,RevertToPointerRoot,CurrentTime);
 	XRaiseWindow(dpy,c->win);
+neighbors(c);
+if (previntarg) slave = c;
 	if (!(c->flags & SCWM_FULLSCREEN)) XRaiseWindow(dpy,bar);
 }
 
@@ -546,6 +555,7 @@ void maprequest(XEvent *e) {
 			c->flags |= SCWM_TRANSIENT;
 		else
 			c->parent = root;
+		// get _NET_WM_WINDOW_TYPE - set SCWM_FLOATING
 		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
 		c->next = clients;
 		clients = c;
@@ -849,6 +859,7 @@ void tile_one(Client *stack) {
 	stack->y = (showbar && topbar ? barheight : 0) + tilegap;
 	stack->w = sw - 2*(tilegap + borderwidth);
 	stack->h = sh - (showbar ? barheight: 0) - 2*(tilegap + borderwidth);
+	slave = stack;
 }
 
 void tile_bstack(Client *stack, int count) {
