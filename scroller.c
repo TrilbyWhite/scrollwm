@@ -28,7 +28,7 @@
 *  4) battery files may differ (common change: BAT1 -> BAT0)
 *
 * COMPILE:
-*   $ sed -i 's/USERNAME/'$USER'/' scroller.c
+*   $ sed -i 's/jmcclure/'$USER'/' scroller.c
 *   $ gcc -o scroller scroller.c
 *
 * NOTE:
@@ -55,8 +55,8 @@ static const char *WIFI_FILE	= "/proc/net/wireless";
 static const char *BATT_NOW		= "/sys/class/power_supply/BAT1/charge_now";
 static const char *BATT_FULL	= "/sys/class/power_supply/BAT1/charge_full";
 static const char *BATT_STAT	= "/sys/class/power_supply/BAT1/status";
-static const char *MAIL_CUR		= "/home/USERNAME/mail/INBOX/cur";
-static const char *MAIL_NEW		= "/home/USERNAME/mail/INBOX/new";
+static const char *MAIL_CUR		= "/home/jmcclure/mail/INBOX/cur";
+static const char *MAIL_NEW		= "/home/jmcclure/mail/INBOX/new";
 static const char *REM_CMD		= "rem -naa -b1 | sort";
 
 /* colors			  			    R G B */
@@ -74,6 +74,7 @@ enum {
 	wifi_full_icon, wifi_hi_icon, wifi_mid_icon, wifi_low_icon,
 	mail_new_icon, mail_none_icon,
 	batt_full_icon, batt_hi_icon, batt_mid_icon, batt_low_icon, batt_zero_icon,
+	batt_charge_icon,
 };
 
 /* variables */
@@ -110,10 +111,11 @@ static int mailcheck() {
 static long schedulecheck() {
 	FILE *in;
 	if ( !(in=popen(REM_CMD,"r")) ) return 0;
-	int y,m,d,hh,mm;
+	int y,m,d,hh=-1,mm;
 	time_t c,t = time(NULL);
 	struct tm *tmp = localtime(&t);
-	fscanf(in,"%d/%d/%d %d:%d",&y,&m,&d,&hh,&mm);
+	while (fscanf(in,"%d/%d/%d %d:%d",&y,&m,&d,&hh,&mm) != 5)
+		fscanf(in,"%*[^\n]\n");
 	pclose(in);
 	tmp->tm_year=y-1900; tmp->tm_mon=m-1; tmp->tm_mday=d;
 	c = mktime(tmp);
@@ -121,7 +123,7 @@ static long schedulecheck() {
 	tmp->tm_hour=hh; tmp->tm_min=mm;
 	c = mktime(tmp);
 	if (c < t + 1200) return Red; /* next event within 20 minutes */
-	if (c < t + 72000) return Yellow; /* next event within 2 hours */
+	if (c < t + 7200) return Yellow; /* next event within 2 hours */
 	return Green; /* event later today */
 }
 
@@ -178,7 +180,7 @@ int main(int argc, const char **argv) {
 			if ( (in=fopen(BATT_FULL,"r")) ) { fscanf(in,"%ld\n",&ln2); fclose(in); }
 			if ( (in=fopen(BATT_STAT,"r")) ) { fscanf(in,"%c",&c); fclose(in); }
 			n = (ln1 ? ln1 * 100 / ln2 : 0);
-			if (c == 'C') printf("{#%06X}%c ",Yellow,181);
+			if (c == 'C') printf("{#%06X}{i %d} ",Yellow,batt_charge_icon);
 			else if (n > 95) printf("{#%06X}{i %d} ",Green,batt_full_icon);
 			else if (n > 90) printf("{#%06X}{i %d} ",Blue,batt_full_icon);
 			else if (n > 85) printf("{#%06X}{i %d} ",Grey,batt_full_icon);
@@ -212,7 +214,7 @@ int main(int argc, const char **argv) {
 			clock_color = schedulecheck();
 			loops = 0;
 		}	
-		printf("{#%06X}{i %d}{#%06X} %s \n",clock_color,clock_icon,White,clk);
+		printf(" {#%06X}{i %d}{#%06X} %s \n",clock_color,clock_icon,White,clk);
 		fflush(stdout);
 		sleep(1);
 	}

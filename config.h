@@ -3,9 +3,9 @@ static const char font[] =  "-misc-fixed-medium-r-normal--13-120-75-75-c-70-*-*"
 static const char *tag_name[] = {"one", "two", "three", "four", "five", NULL};
 static const char *tile_modes[] = {"ttwm", "rstack", "bstack", NULL};
 
-/* uncomment to enable status icons */
-/* icons must be specified in the status input with {i #} format */
-//#include "icons.h"
+/* comment to disable status icons */
+/* icons are specified in the status input with {i #} format */
+#include "icons.h"
 
 static const char colors[LASTColor][9] = {
 	[Background]	= "#101010",
@@ -33,7 +33,7 @@ static const Bool	animations			= True;
 static const Bool	activeedges			= True;
 static const Bool	tagpoints			= False;
 static const int	animatespeed		= 18;
-static Bool			autoretile			= False;
+static Bool			autoretile			= True;
 static const int	borderwidth			= 1;
 static const int	tilegap				= 4;
 static int			tilebias			= 0;
@@ -91,6 +91,7 @@ static Key keys[] = {
 	{ MOD1|ShiftMask,	XK_Tab, 	cycle,		"screen"		},
 	{ MOD1|MOD2,		XK_Tab, 	cycle,		"tag"			},
 	{ MOD1|ControlMask,	XK_Tab, 	cycle,		"visible"		},
+	{ MOD1,				XK_grave, 	cycle,		"other"			},
 	/* select tag */
 	{ MOD1,				XK_1,		tag,		"1"				},
 	{ MOD1,				XK_2,		tag,		"2"				},

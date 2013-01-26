@@ -787,7 +787,6 @@ void switcher(const char *arg) {
 		}
 		draw(clients);
 		XFlush(dpy);
-		//while (!XCheckTypedEvent(dpy,KeyPress, &e));
 		XMaskEvent(dpy,KeyPress, &e);
 		ev = &e.xkey;
 		ks = XkbKeycodeToKeysym(dpy,(KeyCode)ev->keycode,0,0);

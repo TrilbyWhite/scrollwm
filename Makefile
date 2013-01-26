@@ -5,7 +5,7 @@ PREFIX	?=	/usr
 MANDIR	?=	/usr/share/man
 VER		=	0.1
 
-$(PROG): $(PROG).c config.h
+$(PROG): $(PROG).c config.h icons.h
 	@$(CC) $(CFLAGS) $(LIBS) -o $(PROG) $(PROG).c
 	@strip $(PROG)
 #	@gzip -c $(PROG).1 > $(PROG).1.gz
