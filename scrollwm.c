@@ -47,7 +47,7 @@ typedef struct {
 typedef struct Client Client;
 struct Client {
 	char *title;
-	int tlen;
+//	int tlen;
 	int x, y;
 	float w, h;
 	int tags, flags;
@@ -143,6 +143,7 @@ static char curtile[2] = "0";
 static int statuswidth = 0;
 static FILE *inpipe;
 static char targetmode = 's';
+static const char *noname_window = "(UNNAMED)";
 //static Bool fullscreenstate = False;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress]		= buttonpress,
@@ -427,14 +428,8 @@ void draw(Client *stack) {
 	/* title */
 	if (focused) {
 		setcolor(Title);
-		if (focused->title) {
-			XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
-			x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
-		}
-		else {
-			XDrawString(dpy,buf,gc,x,fontheight,"UNNAMED",7);
-			x += XTextWidth(fontstruct,"UNNAMED",7) + 10;
-		}
+		XDrawString(dpy,buf,gc,x,fontheight,focused->title,strlen(focused->title));
+		x += XTextWidth(fontstruct,focused->title,strlen(focused->title)) + 10;
 		XDrawString(dpy,buf,setcolor(TagList),x,fontheight,"[",1);
 		x += XTextWidth(fontstruct,"[",1);
 		/* tag list */
@@ -532,7 +527,7 @@ void killclient(const char *arg) {
 }
 
 void maprequest(XEvent *e) {
-	Client *c;
+	Client *c,*parent;
 	static XWindowAttributes wa;
 	Bool fsme = False;
 	XMapRequestEvent *ev = &e->xmaprequest;
@@ -550,11 +545,16 @@ void maprequest(XEvent *e) {
 			c->x = tilegap;
 		}
 		c->tags = (1<<curtag);
-		if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
 		if (XGetTransientForHint(dpy,c->win,&c->parent))
 			c->flags |= SCWM_TRANSIENT;
 		else
-			c->parent = root;
+			c->parent = ev->parent;
+		if ( !(XFetchName(dpy,c->win,&c->title)) || c->title == NULL ) {
+			if ( (parent=wintoclient(c->parent)) )
+				c->title = strdup(parent->title);
+			else
+				c->title = strdup(noname_window);
+		}
 		// get _NET_WM_WINDOW_TYPE - set SCWM_FLOATING
 		XSelectInput(dpy,c->win,PropertyChangeMask | EnterWindowMask);
 		c->next = clients;
@@ -648,13 +648,16 @@ Bool onscreen(Client *c) {
 
 void propertynotify(XEvent *e) {
     XPropertyEvent *ev = &e->xproperty;
-    Client *c;
+    Client *c,*parent;
     if ( !(c=wintoclient(ev->window)) ) return;
     if (ev->atom == XA_WM_NAME) {
-        XFree(c->title);
-        c->title = NULL;
-        c->tlen = 0;
-        if (XFetchName(dpy,c->win,&c->title)) c->tlen = strlen(c->title);
+        XFree(c->title); c->title = NULL;
+		if ( !(XFetchName(dpy,c->win,&c->title)) || c->title == NULL ) {
+			if ( (parent=wintoclient(c->parent)) )
+				c->title = strdup(parent->title);
+			else
+				c->title = strdup(noname_window);
+		}
         draw(clients);
     }
     else if (ev->atom == XA_WM_HINTS) {
@@ -751,7 +754,7 @@ Bool swap(Client *a, Client *b) {
 	if (!a || !b) return False;
 	Client t;
 	t.title = a->title; a->title=b->title; b->title = t.title;
-	t.tlen = a->tlen; a->tlen=b->tlen; b->tlen = t.tlen;
+//	t.tlen = a->tlen; a->tlen=b->tlen; b->tlen = t.tlen;
 	t.tags = a->tags; a->tags=b->tags; b->tags = t.tags;
 	t.win = a->win; a->win=b->win; b->win = t.win;
 	return True;
